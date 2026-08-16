@@ -1,0 +1,23 @@
+const express = require('express');
+const router = express.Router();
+const { authMiddleware, adminMiddleware } = require('../middleware/auth');
+const adminController = require('../controllers/adminController');
+
+router.use(authMiddleware, adminMiddleware);
+
+// Dashboard
+router.get('/dashboard', adminController.getDashboardStats);
+
+// Villages
+router.post('/villages', adminController.createVillage);
+router.get('/villages', adminController.getVillages);
+
+// Enumerators
+router.post('/enumerators', adminController.createEnumerator);
+router.get('/enumerators', adminController.getEnumerators);
+
+// Validation / Flagged Records
+router.get('/validation/flagged', adminController.getFlaggedRecords);
+router.post('/validation/:id/review', adminController.reviewRecord);
+
+module.exports = router;
