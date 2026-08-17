@@ -19,6 +19,8 @@ const AdminDashboard = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [retraining, setRetraining] = useState(false);
+  const [mlMessage, setMlMessage] = useState('');
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -40,12 +42,45 @@ const AdminDashboard = () => {
   if (loading) return <div className="p-8">Loading...</div>;
   if (!stats) return <div className="p-8">Error loading dashboard data.</div>;
 
+  const handleRetrain = async () => {
+    try {
+      setRetraining(true);
+      setMlMessage('');
+      const token = localStorage.getItem('token');
+      const res = await axios.post('http://localhost:5000/api/admin/ml/train', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMlMessage(res.data.message || 'Model retrained successfully');
+      setTimeout(() => setMlMessage(''), 5000);
+    } catch (err) {
+      console.error(err);
+      setMlMessage(err.response?.data?.error || err.response?.data?.message || 'Failed to retrain model');
+    } finally {
+      setRetraining(false);
+    }
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <div className="mb-8 flex justify-between items-center">
+      <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Admin Dashboard</h1>
           <p className="text-slate-500 mt-1">Welcome back, {user?.name}</p>
+        </div>
+        <div className="mt-4 md:mt-0 flex flex-col items-end">
+          <button 
+            onClick={handleRetrain}
+            disabled={retraining}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-colors flex items-center space-x-2 disabled:opacity-50"
+          >
+            <Activity className="w-4 h-4" />
+            <span>{retraining ? 'Retraining Model...' : 'Retrain ML Model'}</span>
+          </button>
+          {mlMessage && (
+            <p className={`text-xs mt-2 ${mlMessage.includes('Failed') || mlMessage.includes('Not enough') ? 'text-red-500' : 'text-emerald-600'}`}>
+              {mlMessage}
+            </p>
+          )}
         </div>
       </div>
 

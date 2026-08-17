@@ -141,3 +141,49 @@ exports.reviewRecord = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.trainMLModel = async (req, res) => {
+  try {
+    const axios = require('axios');
+    // Fetch historical data for training (e.g. up to 10,000 normal/validated records)
+    const records = await SurveyRecord.find({ validationStatus: { $ne: 'Flagged' } })
+      .limit(10000)
+      .lean();
+      
+    if (records.length < 5) {
+      return res.status(400).json({ message: 'Not enough historical data to train the model. Need at least 5 validated records.' });
+    }
+    
+    // Map to a clean JSON array
+    const trainingData = records.map(r => {
+       const dynamicFields = r.dynamicData || {};
+       return {
+         ...dynamicFields,
+         age: r.age,
+         income: r.income,
+         hours_worked: r.hours_worked,
+         household_size: r.household_size,
+         gender: r.gender,
+         education: r.education,
+         occupation: r.occupation,
+         employment_status: r.employment_status
+       };
+    });
+    
+    // Trigger Python ML Service
+    const mlRes = await axios.post(`${process.env.ML_SERVICE_URL}/ml/train`, {
+      records: trainingData
+    });
+    
+    // Optionally save the model metadata to our DB if we want a ModelRegistry collection, 
+    // but returning it to the admin is enough for now.
+    res.json({
+      message: 'Machine Learning Model retrained successfully!',
+      metadata: mlRes.data.metadata
+    });
+    
+  } catch (err) {
+    console.error("Training Error:", err.message);
+    res.status(500).json({ error: 'Failed to train ML model: ' + (err.response?.data?.detail || err.message) });
+  }
+};

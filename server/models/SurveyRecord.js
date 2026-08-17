@@ -28,9 +28,12 @@ const surveyRecordSchema = new mongoose.Schema({
   ruleValidationScore: { type: Number, default: 0 },
   ruleMessages: [{ type: String }],
   
-  // ML scores
+  // ML scores and explanations
   isolationForestScore: { type: Number },
   lofScore: { type: Number },
+  anomalyReasons: [{ type: String }],
+  modelVersion: { type: String },
+  analyzedAt: { type: Date },
   
   // Combined Risk
   combinedRiskScore: { type: Number }, // 0 - 100

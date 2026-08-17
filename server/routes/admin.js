@@ -21,4 +21,7 @@ router.delete('/enumerators/:id', adminController.deleteEnumerator);
 router.get('/validation/flagged', adminController.getFlaggedRecords);
 router.post('/validation/:id/review', adminController.reviewRecord);
 
+// ML Management
+router.post('/ml/train', adminController.trainMLModel);
+
 module.exports = router;

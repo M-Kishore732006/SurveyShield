@@ -65,44 +65,73 @@ exports.uploadSurveyData = async (req, res) => {
         let critical = 0;
         let uniqueVillages = new Set();
 
-        for (let row of results) {
-          const { score: ruleScore, messages } = runRuleValidation(row);
+        // 1. Prepare batch for ML
+        const mlBatch = results.map(row => {
+          const dynamicData = {};
+          Object.keys(row).forEach(key => {
+            if (!standardFields.includes(key)) {
+              dynamicData[key] = row[key];
+            }
+          });
           
-          let isolationForestScore = 0;
-          let lofScore = 0;
+          return {
+            ...dynamicData,
+            age: parseFloat(row.age) || 0,
+            income: parseFloat(row.income) || 0,
+            hours_worked: parseFloat(row.hours_worked) || 0,
+            household_size: parseFloat(row.household_size) || 1,
+            gender: row.gender || 'Unknown',
+            education: row.education || 'Unknown',
+            occupation: row.occupation || 'Unknown',
+            employment_status: row.employment_status || 'Unknown'
+          };
+        });
 
-          try {
-            const mlRes = await axios.post(`${process.env.ML_SERVICE_URL}/ml/predict`, {
-              records: [{
-                age: parseFloat(row.age) || 0,
-                income: parseFloat(row.income) || 0,
-                hours_worked: parseFloat(row.hours_worked) || 0,
-                household_size: parseFloat(row.household_size) || 1
-              }]
-            });
-            const mlResults = mlRes.data.results[0];
-            isolationForestScore = mlResults.isolation_forest_score;
-            lofScore = mlResults.lof_score;
-          } catch (err) {
-            console.error("ML Service Error:", err.message);
-          }
+        // 2. Call ML Service (Batch)
+        let mlResults = [];
+        try {
+          const mlRes = await axios.post(`${process.env.ML_SERVICE_URL}/ml/predict`, {
+            records: mlBatch
+          });
+          mlResults = mlRes.data.results;
+        } catch (err) {
+          console.error("ML Service Batch Error:", err.message);
+          // Fallback if ML service is down
+          mlResults = mlBatch.map(() => ({
+            isAnomaly: false,
+            anomalyScore: 0,
+            severity: "LOW",
+            reasons: [],
+            modelVersion: "unknown"
+          }));
+        }
+
+        // 3. Process each record and save
+        const savedRecords = [];
+        for (let i = 0; i < results.length; i++) {
+          const row = results[i];
+          const mlResult = mlResults[i];
+          const { score: ruleScore, messages } = runRuleValidation(row);
 
           const ruleRisk = 100 - ruleScore;
-          const combinedRiskScore = (isolationForestScore * 0.4) + (lofScore * 0.3) + (ruleRisk * 0.3);
+          // Heavily weight ML score if it's high, otherwise combine
+          const combinedRiskScore = (mlResult.anomalyScore * 0.7) + (ruleRisk * 0.3);
 
           let recordRiskLevel = 'Normal';
           let validationStatus = 'Validated';
-          let flagReason = '';
+          
+          let flagReason = messages.join('; ');
+          if (mlResult.isAnomaly) {
+             flagReason += (flagReason ? '; ' : '') + 'ML Anomaly Detected';
+          }
 
-          if (combinedRiskScore >= 80) {
+          if (mlResult.severity === 'HIGH' || combinedRiskScore >= 80) {
             recordRiskLevel = 'High Risk';
             validationStatus = 'Flagged';
-            flagReason = messages.join('; ') + (messages.length ? '; ' : '') + 'High ML anomaly detected';
             critical++;
-          } else if (combinedRiskScore >= 60) {
+          } else if (mlResult.severity === 'MEDIUM' || combinedRiskScore >= 60) {
             recordRiskLevel = 'Medium Risk';
             validationStatus = 'Flagged';
-            flagReason = messages.join('; ') + (messages.length ? '; ' : '') + 'Medium ML anomaly detected';
             warnings++;
           } else {
             if (combinedRiskScore >= 30) {
@@ -128,8 +157,7 @@ exports.uploadSurveyData = async (req, res) => {
             survey_id: row.survey_id || 'UNKNOWN',
             uploadId: newDataset._id,
             enumerator_id: req.user.id,
-            village_id: req.user.villageId || row.village_id || null, // Might be null if missing, wait we need village_id objectId...
-            // the original code just did row.village_id which might be a string. For MVP, we pass it directly or skip if missing.
+            village_id: req.user.villageId || row.village_id || null,
             district: row.district,
             age: row.age,
             gender: row.gender,
@@ -142,17 +170,28 @@ exports.uploadSurveyData = async (req, res) => {
             interview_duration: row.interview_duration,
             survey_date: row.survey_date || new Date(),
             dynamicData: dynamicData,
+            
             validationStatus,
             ruleValidationScore: ruleScore,
             ruleMessages: messages,
-            isolationForestScore,
-            lofScore,
+            
+            isolationForestScore: mlResult.anomalyScore,
+            lofScore: 0, // Deprecated in new pipeline
+            anomalyReasons: mlResult.reasons,
+            modelVersion: mlResult.modelVersion,
+            analyzedAt: new Date(),
+            
             combinedRiskScore,
             riskLevel: recordRiskLevel,
             flagReason
           });
           
-          await newRecord.save();
+          savedRecords.push(newRecord);
+        }
+
+        // Bulk insert for speed
+        if (savedRecords.length > 0) {
+           await SurveyRecord.insertMany(savedRecords);
         }
 
         // Update Dataset

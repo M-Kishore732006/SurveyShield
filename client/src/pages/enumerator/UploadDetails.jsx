@@ -155,7 +155,7 @@ const UploadDetails = () => {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 max-w-xs">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
                           record.validationStatus === 'Validated' ? 'bg-emerald-100 text-emerald-700' :
                           record.validationStatus === 'Flagged' ? 'bg-amber-100 text-amber-700' :
@@ -163,6 +163,28 @@ const UploadDetails = () => {
                         }`}>
                           {record.validationStatus}
                         </span>
+                        {record.anomalyReasons && record.anomalyReasons.length > 0 && (
+                          <div className="mt-2 space-y-1 bg-red-50 p-2 rounded border border-red-100">
+                            <p className="text-xs font-bold text-red-700 mb-1">ML Anomalies:</p>
+                            {record.anomalyReasons.map((reason, idx) => (
+                              <p key={idx} className="text-xs text-red-600 flex items-start leading-tight">
+                                <span className="mr-1 mt-0.5 text-[10px]">●</span>
+                                <span>{reason}</span>
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                        {record.ruleMessages && record.ruleMessages.length > 0 && (
+                          <div className="mt-2 space-y-1 bg-amber-50 p-2 rounded border border-amber-100">
+                            <p className="text-xs font-bold text-amber-700 mb-1">Rule Violations:</p>
+                            {record.ruleMessages.map((msg, idx) => (
+                              <p key={idx} className="text-xs text-amber-600 flex items-start leading-tight">
+                                <span className="mr-1 mt-0.5 text-[10px]">●</span>
+                                <span>{msg}</span>
+                              </p>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${

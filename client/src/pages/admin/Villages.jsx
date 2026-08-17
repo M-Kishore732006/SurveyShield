@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Plus, MapPin } from 'lucide-react';
+import { Search, Plus, MapPin, Download } from 'lucide-react';
 
 const Villages = () => {
   const [villages, setVillages] = useState([]);
@@ -23,6 +23,27 @@ const Villages = () => {
       console.error('Failed to fetch villages', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadReport = async (villageId, villageName) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`http://localhost:5000/api/reports/village/${villageId}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Village_Report_${villageName.replace(/\s+/g, '_')}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error('Failed to download report', err);
+      alert('Failed to generate report.');
     }
   };
 
@@ -103,7 +124,16 @@ const Villages = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <button className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Manage</button>
+                      <div className="flex space-x-3">
+                        <button className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Manage</button>
+                        <button 
+                          onClick={() => handleDownloadReport(village._id, village.name)}
+                          className="flex items-center space-x-1 text-emerald-600 hover:text-emerald-800 text-sm font-medium"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Report</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
