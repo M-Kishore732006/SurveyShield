@@ -82,6 +82,25 @@ exports.getEnumerators = async (req, res) => {
   }
 };
 
+exports.deleteEnumerator = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id);
+    if (!user || user.role !== 'enumerator') {
+      return res.status(404).json({ message: 'Enumerator not found' });
+    }
+
+    if (user.villageId) {
+      await Village.findByIdAndUpdate(user.villageId, { $pull: { enumerators: user._id } });
+    }
+
+    await User.findByIdAndDelete(id);
+    res.json({ message: 'Enumerator deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.getFlaggedRecords = async (req, res) => {
   try {
     const records = await SurveyRecord.find({ validationStatus: 'Flagged' })

@@ -15,6 +15,7 @@ router.get('/villages', adminController.getVillages);
 // Enumerators
 router.post('/enumerators', adminController.createEnumerator);
 router.get('/enumerators', adminController.getEnumerators);
+router.delete('/enumerators/:id', adminController.deleteEnumerator);
 
 // Validation / Flagged Records
 router.get('/validation/flagged', adminController.getFlaggedRecords);

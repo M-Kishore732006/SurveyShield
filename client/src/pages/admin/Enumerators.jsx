@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Trash2 } from 'lucide-react';
 
 const Enumerators = () => {
   const [enumerators, setEnumerators] = useState([]);
@@ -23,6 +23,20 @@ const Enumerators = () => {
       console.error('Failed to fetch enumerators', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this enumerator?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:5000/api/admin/enumerators/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setEnumerators(enumerators.filter(e => e._id !== id));
+    } catch (err) {
+      console.error('Failed to delete enumerator', err);
+      alert('Failed to delete enumerator');
     }
   };
 
@@ -101,8 +115,15 @@ const Enumerators = () => {
                         {enumr.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 flex space-x-3 items-center">
                       <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">View</button>
+                      <button 
+                        onClick={() => handleDelete(enumr._id)}
+                        className="text-red-500 hover:text-red-700 transition-colors"
+                        title="Delete Enumerator"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 ))
