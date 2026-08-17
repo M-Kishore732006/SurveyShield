@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Upload, FileText, CheckCircle, AlertTriangle, LogOut, BarChart2 } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertTriangle, LogOut, BarChart2, Eye } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const StatCard = ({ title, value, icon: Icon, color }) => (
@@ -21,21 +22,21 @@ const EnumeratorDashboard = () => {
   const [file, setFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [surveys, setSurveys] = useState([]);
+  const [datasets, setDatasets] = useState([]);
 
   useEffect(() => {
-    fetchSurveys();
+    fetchDatasets();
   }, []);
 
-  const fetchSurveys = async () => {
+  const fetchDatasets = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/surveys', {
+      const res = await axios.get('http://localhost:5000/api/surveys/uploads', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setSurveys(res.data);
+      setDatasets(res.data);
     } catch (err) {
-      console.error('Error fetching surveys', err);
+      console.error('Error fetching datasets', err);
     }
   };
 
@@ -57,7 +58,8 @@ const EnumeratorDashboard = () => {
       });
       setUploadStatus(res.data);
       setFile(null);
-      fetchSurveys();
+      // Wait a moment for background processing before fetching
+      setTimeout(fetchDatasets, 1000);
     } catch (err) {
       console.error(err);
       setUploadStatus({ error: 'Upload failed' });
@@ -66,15 +68,21 @@ const EnumeratorDashboard = () => {
     }
   };
 
-  // Prepare data for the chart
-  const validatedCount = surveys.filter(s => s.validationStatus === 'Validated').length;
-  const flaggedCount = surveys.filter(s => s.validationStatus === 'Flagged').length;
-  const pendingCount = surveys.length - validatedCount - flaggedCount;
+  // Aggregate stats
+  let totalRecords = 0;
+  let totalValid = 0;
+  let totalFlagged = 0;
+  datasets.forEach(d => {
+    totalRecords += d.numberOfRecords || 0;
+    if (d.anomalyStats) {
+      totalValid += d.anomalyStats.valid;
+      totalFlagged += d.anomalyStats.warnings + d.anomalyStats.critical;
+    }
+  });
 
   const chartData = [
-    { name: 'Validated', value: validatedCount, color: '#10b981' },
-    { name: 'Flagged', value: flaggedCount, color: '#f59e0b' },
-    { name: 'Pending', value: pendingCount, color: '#64748b' }
+    { name: 'Validated', value: totalValid, color: '#10b981' },
+    { name: 'Flagged', value: totalFlagged, color: '#f59e0b' }
   ].filter(d => d.value > 0);
 
   return (
@@ -106,10 +114,10 @@ const EnumeratorDashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <StatCard title="Total Records" value={surveys.length} icon={FileText} color="bg-blue-500" />
-          <StatCard title="Validated" value={validatedCount} icon={CheckCircle} color="bg-emerald-500" />
-          <StatCard title="Flagged" value={flaggedCount} icon={AlertTriangle} color="bg-amber-500" />
-          <StatCard title="Reliability Score" value="100%" icon={BarChart2} color="bg-indigo-500" />
+          <StatCard title="Total Records" value={totalRecords} icon={FileText} color="bg-blue-500" />
+          <StatCard title="Validated" value={totalValid} icon={CheckCircle} color="bg-emerald-500" />
+          <StatCard title="Flagged" value={totalFlagged} icon={AlertTriangle} color="bg-amber-500" />
+          <StatCard title="Total Datasets" value={datasets.length} icon={BarChart2} color="bg-indigo-500" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -120,7 +128,7 @@ const EnumeratorDashboard = () => {
             {/* Upload Box */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 transition-shadow hover:shadow-md">
               <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
-                  <Upload className="w-5 h-5 mr-2 text-blue-600" /> Upload Survey Data
+                  <Upload className="w-5 h-5 mr-2 text-blue-600" /> Upload Survey CSV
               </h2>
               <form onSubmit={handleUpload}>
                 <div className="relative group">
@@ -147,7 +155,7 @@ const EnumeratorDashboard = () => {
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          Processing Records...
+                          Uploading...
                       </span>
                   ) : 'Upload & Validate'}
                 </button>
@@ -157,27 +165,16 @@ const EnumeratorDashboard = () => {
                 <div className="mt-6 p-4 bg-emerald-50 text-emerald-800 rounded-xl border border-emerald-100 flex items-start space-x-3">
                   <CheckCircle className="w-5 h-5 text-emerald-600 mt-0.5" />
                   <div>
-                    <p className="font-bold text-sm mb-1">Upload Complete</p>
-                    <div className="text-xs space-y-1 opacity-90">
-                        <p>{uploadStatus.processed} of {uploadStatus.totalReceived} records processed</p>
-                        {uploadStatus.flagged > 0 && (
-                            <p className="text-amber-600 font-semibold mt-1">⚠️ {uploadStatus.flagged} records flagged for review by admin.</p>
-                        )}
-                    </div>
+                    <p className="font-bold text-sm mb-1">Upload Started!</p>
+                    <p className="text-xs">Your dataset has been queued for validation. Check the table for progress.</p>
                   </div>
-                </div>
-              )}
-              {uploadStatus && uploadStatus.error && (
-                <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-xl text-sm font-medium border border-red-100 flex items-center space-x-2">
-                  <AlertTriangle className="w-4 h-4" />
-                  <span>{uploadStatus.error}</span>
                 </div>
               )}
             </div>
 
             {/* Quality Chart */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <h2 className="text-lg font-bold text-slate-800 mb-4">Validation Status</h2>
+                <h2 className="text-lg font-bold text-slate-800 mb-4">Overall Data Quality</h2>
                 {chartData.length > 0 ? (
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
@@ -211,16 +208,16 @@ const EnumeratorDashboard = () => {
 
           </div>
 
-          {/* Right Column: Submissions Table */}
+          {/* Right Column: Uploaded Datasets Table */}
           <div className="lg:col-span-2 flex flex-col h-full">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full overflow-hidden">
               <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                   <div>
-                      <h2 className="text-lg font-bold text-slate-800">All Submissions</h2>
-                      <p className="text-sm text-slate-500 mt-1">Scroll to view all your uploaded records</p>
+                      <h2 className="text-lg font-bold text-slate-800">Uploaded Datasets</h2>
+                      <p className="text-sm text-slate-500 mt-1">History of all your CSV uploads</p>
                   </div>
                   <div className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
-                      {surveys.length} Records
+                      {datasets.length} Batches
                   </div>
               </div>
               
@@ -228,47 +225,61 @@ const EnumeratorDashboard = () => {
                 <table className="w-full text-left border-collapse">
                   <thead className="sticky top-0 bg-white shadow-sm z-10">
                     <tr>
-                      <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50">Household ID</th>
-                      <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50">Date</th>
-                      <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50">Validation Status</th>
-                      <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50">Risk Level</th>
+                      <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50">File Name</th>
+                      <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50">Upload Date</th>
+                      <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50">Records</th>
+                      <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50">Status</th>
+                      <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {surveys.length === 0 ? (
+                    {datasets.length === 0 ? (
                         <tr>
-                            <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
+                            <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
                                 <div className="flex flex-col items-center justify-center">
                                     <FileText className="w-12 h-12 text-slate-300 mb-3" />
-                                    <p className="text-lg font-medium text-slate-900">No records found</p>
+                                    <p className="text-lg font-medium text-slate-900">No datasets found</p>
                                     <p className="text-sm">Upload your first CSV to get started.</p>
                                 </div>
                             </td>
                         </tr>
                     ) : (
-                        surveys.map(record => (
-                        <tr key={record._id} className="hover:bg-slate-50 transition-colors group">
-                            <td className="px-6 py-4 text-sm font-semibold text-slate-800">{record.household_id}</td>
-                            <td className="px-6 py-4 text-sm text-slate-500 font-medium">{new Date(record.survey_date).toLocaleDateString()}</td>
+                        datasets.map(dataset => (
+                        <tr key={dataset._id} className="hover:bg-slate-50 transition-colors group">
+                            <td className="px-6 py-4">
+                                <div className="font-semibold text-slate-800 flex items-center space-x-2">
+                                    <FileText className="w-4 h-4 text-blue-500" />
+                                    <span>{dataset.fileName}</span>
+                                </div>
+                                {dataset.villages && dataset.villages.length > 0 && (
+                                    <div className="text-xs text-slate-500 mt-1">
+                                        Villages: {dataset.villages.length}
+                                    </div>
+                                )}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-500 font-medium">
+                                {new Date(dataset.uploadDate).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 text-sm font-semibold text-slate-700">
+                                {dataset.numberOfRecords}
+                            </td>
                             <td className="px-6 py-4">
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                                record.validationStatus === 'Validated' ? 'bg-emerald-100 text-emerald-700' :
-                                record.validationStatus === 'Flagged' ? 'bg-amber-100 text-amber-700' :
-                                'bg-slate-100 text-slate-700'
+                                dataset.processingStatus === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
+                                dataset.processingStatus === 'Processing' ? 'bg-amber-100 text-amber-700' :
+                                'bg-red-100 text-red-700'
                             }`}>
-                                {record.validationStatus === 'Validated' && <CheckCircle className="w-3 h-3 mr-1" />}
-                                {record.validationStatus === 'Flagged' && <AlertTriangle className="w-3 h-3 mr-1" />}
-                                {record.validationStatus}
+                                {dataset.processingStatus}
                             </span>
                             </td>
                             <td className="px-6 py-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                record.riskLevel === 'High Risk' ? 'bg-red-100 text-red-700' :
-                                record.riskLevel === 'Medium Risk' ? 'bg-amber-100 text-amber-700' :
-                                'bg-emerald-100 text-emerald-700'
-                            }`}>
-                                {record.riskLevel}
-                            </span>
+                                <Link 
+                                    to={`/enumerator/uploads/${dataset._id}`}
+                                    className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 text-sm font-bold"
+                                >
+                                    <Eye className="w-4 h-4" />
+                                    <span>View Details</span>
+                                </Link>
                             </td>
                         </tr>
                         ))

@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Plus, Trash2 } from 'lucide-react';
+import { Search, Plus, Trash2, X } from 'lucide-react';
 
 const Enumerators = () => {
   const [enumerators, setEnumerators] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    phone: '',
+    state: '',
+    district: ''
+  });
   const { user } = useAuth();
 
   useEffect(() => {
@@ -40,6 +50,25 @@ const Enumerators = () => {
     }
   };
 
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post('http://localhost:5000/api/admin/enumerators', formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setIsModalOpen(false);
+      setFormData({ name: '', email: '', password: '', phone: '', state: '', district: '' });
+      fetchEnumerators();
+    } catch (err) {
+      console.error('Failed to create enumerator', err);
+      alert('Failed to create enumerator: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-8">
@@ -47,7 +76,10 @@ const Enumerators = () => {
           <h1 className="text-2xl font-bold text-slate-900">Enumerators</h1>
           <p className="text-slate-500 mt-1">Manage survey enumerators</p>
         </div>
-        <button className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+        >
           <Plus className="w-5 h-5" />
           <span>Add Enumerator</span>
         </button>
@@ -132,6 +164,78 @@ const Enumerators = () => {
           </table>
         </div>
       </div>
+
+      {/* Add Enumerator Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="flex justify-between items-center p-6 border-b border-slate-100">
+              <h2 className="text-xl font-bold text-slate-800">Add New Enumerator</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreate} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                <input 
+                  type="text" required 
+                  value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                <input 
+                  type="email" required 
+                  value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                <input 
+                  type="password" required 
+                  value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">State</label>
+                  <input 
+                    type="text" required 
+                    value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">District</label>
+                  <input 
+                    type="text" required 
+                    value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                  />
+                </div>
+              </div>
+              <div className="pt-4 flex space-x-3">
+                <button 
+                  type="button" onClick={() => setIsModalOpen(false)}
+                  className="flex-1 py-2 px-4 border border-slate-200 text-slate-600 rounded-lg font-medium hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" disabled={isSubmitting}
+                  className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Adding...' : 'Add Enumerator'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

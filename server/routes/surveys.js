@@ -12,4 +12,9 @@ router.use(authMiddleware);
 router.post('/upload', upload.single('file'), surveyController.uploadSurveyData);
 router.get('/', surveyController.getSurveys);
 
+// Datasets/Uploads
+router.get('/uploads', surveyController.getUploads);
+router.get('/uploads/:uploadId', surveyController.getUploadDetails);
+router.get('/uploads/:uploadId/records', surveyController.getUploadRecords);
+
 module.exports = router;

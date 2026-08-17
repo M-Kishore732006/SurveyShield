@@ -1,0 +1,10 @@
+household_id,survey_id,enumerator_id,village_id,district,age,gender,education,occupation,employment_status,income,hours_worked,household_size,interview_duration,survey_date
+HH1,S001,,V1001,District A,45,M,Secondary,Farming,Employed,15000,40,4,45,2024-05-10
+HH2,S002,,V1001,District A,30,F,Primary,Weaving,Employed,8000,35,3,40,2024-05-10
+HH3,S003,,V1001,District A,5,M,None,Unemployed,Unemployed,900000,100,1,10,2024-05-10
+HH4,S004,,V1001,District A,55,M,None,Laborer,Employed,5000,60,6,50,2024-05-10
+HH5,S005,,V1001,District A,22,F,Higher,Clerk,Employed,30000,45,2,40,2024-05-10
+HH6,S006,,V1001,District A,150,M,Higher,CEO,Employed,5000000,168,10,5,2024-05-10
+HH7,S007,,V1001,District A,40,F,Secondary,Farming,Employed,12000,40,4,45,2024-05-10
+HH8,S008,,V1001,District A,35,M,Primary,Laborer,Employed,7000,45,5,42,2024-05-10
+HH9,S009,,V1001,District A,12,M,None,Farming,Employed,-5000,80,8,15,2024-05-10

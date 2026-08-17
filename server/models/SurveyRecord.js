@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const surveyRecordSchema = new mongoose.Schema({
   household_id: { type: String, required: true },
   survey_id: { type: String, required: true },
+  uploadId: { type: mongoose.Schema.Types.ObjectId, ref: 'Dataset', required: true },
   enumerator_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   village_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Village', required: true },
   district: { type: String },
@@ -16,6 +17,9 @@ const surveyRecordSchema = new mongoose.Schema({
   household_size: { type: Number },
   interview_duration: { type: Number }, // in minutes
   survey_date: { type: Date, required: true },
+
+  // Dynamic Fields (any CSV headers not matched above)
+  dynamicData: { type: Map, of: mongoose.Schema.Types.Mixed },
 
   // Validation results
   validationStatus: { type: String, enum: ['Pending', 'Validated', 'Flagged'], default: 'Pending' },
@@ -43,6 +47,7 @@ const surveyRecordSchema = new mongoose.Schema({
 
 // Indexes for querying flagged records easily
 surveyRecordSchema.index({ enumerator_id: 1 });
+surveyRecordSchema.index({ uploadId: 1 });
 surveyRecordSchema.index({ village_id: 1 });
 surveyRecordSchema.index({ riskLevel: 1 });
 surveyRecordSchema.index({ survey_date: 1 });

@@ -11,6 +11,8 @@ import FlaggedRecords from './pages/admin/FlaggedRecords';
 import Surveys from './pages/admin/Surveys';
 import Reports from './pages/admin/Reports';
 import EnumeratorDashboard from './pages/enumerator/Dashboard';
+import UploadDetails from './pages/enumerator/UploadDetails';
+import Unauthorized from './pages/Unauthorized';
 
 function App() {
   return (
@@ -46,6 +48,7 @@ function App() {
                 <ProtectedRoute roles={['enumerator']}>
                   <Routes>
                     <Route path="dashboard" element={<EnumeratorDashboard />} />
+                    <Route path="uploads/:id" element={<UploadDetails />} />
                     {/* Add more enumerator routes here */}
                     <Route path="*" element={<Navigate to="/enumerator/dashboard" replace />} />
                   </Routes>
@@ -54,6 +57,8 @@ function App() {
             />
 
             <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
       </AuthProvider>
