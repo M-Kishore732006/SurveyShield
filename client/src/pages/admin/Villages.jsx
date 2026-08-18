@@ -77,7 +77,7 @@ const Villages = () => {
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="px-6 py-4 text-sm font-semibold text-slate-700">Village Details</th>
-                <th className="px-6 py-4 text-sm font-semibold text-slate-700">Enumerators</th>
+                <th className="px-6 py-4 text-sm font-semibold text-slate-700">Assigned Enumerator</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-700">Records</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-700">Quality Score</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-700">Status</th>
@@ -103,7 +103,7 @@ const Villages = () => {
                       </div>
                       <div className="text-sm text-slate-500 mt-1">{village.district}, {village.state}</div>
                     </td>
-                    <td className="px-6 py-4 text-slate-600">{village.enumerators?.length || 0} assigned</td>
+                    <td className="px-6 py-4 text-slate-600">{village.enumerator?.name || 'Unassigned'}</td>
                     <td className="px-6 py-4">
                       <div className="text-sm">Total: {village.totalRecords}</div>
                       <div className="text-xs text-rose-500 mt-1">{village.highRiskRecords} high risk</div>

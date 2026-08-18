@@ -6,8 +6,8 @@ const villageSchema = new mongoose.Schema({
   district: { type: String, required: true },
   state: { type: String, required: true },
   
-  // Assigned Enumerators
-  enumerators: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  // Assigned Enumerator (1-to-1 relationship)
+  enumerator: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   
   // Statistics
   totalRecords: { type: Number, default: 0 },

@@ -41,8 +41,8 @@ async function seedData() {
 
     // 3. Create Enumerators
     const enumerators = [];
-    for (let i = 1; i <= 20; i++) {
-      const vIndex = i % 10; // assign to villages
+    for (let i = 1; i <= 10; i++) {
+      const vIndex = i - 1; // assign to villages 1-to-1
       const e = await User.create({
         name: `Enumerator ${i}`,
         email: `enum${i}@surveyshield.gov`,
@@ -51,10 +51,10 @@ async function seedData() {
         villageId: villages[vIndex]._id
       });
       
-      await Village.findByIdAndUpdate(villages[vIndex]._id, { $push: { enumerators: e._id } });
+      await Village.findByIdAndUpdate(villages[vIndex]._id, { enumerator: e._id });
       enumerators.push(e);
     }
-    console.log('20 Enumerators created.');
+    console.log('10 Enumerators created.');
 
     // 4. Generate CSV for Demo Data (Synthetic)
     const records = [];

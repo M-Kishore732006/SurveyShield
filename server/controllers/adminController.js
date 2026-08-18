@@ -29,8 +29,22 @@ exports.getDashboardStats = async (req, res) => {
 
 exports.createVillage = async (req, res) => {
   try {
-    const newVillage = new Village(req.body);
+    const { villageId, name, district, state, enumerator } = req.body;
+
+    if (enumerator) {
+      const existingUser = await User.findById(enumerator);
+      if (existingUser && existingUser.villageId) {
+        return res.status(400).json({ error: 'This enumerator is already assigned to another village' });
+      }
+    }
+
+    const newVillage = new Village({ villageId, name, district, state, enumerator });
     await newVillage.save();
+
+    if (enumerator) {
+      await User.findByIdAndUpdate(enumerator, { villageId: newVillage._id });
+    }
+
     res.status(201).json(newVillage);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -39,7 +53,7 @@ exports.createVillage = async (req, res) => {
 
 exports.getVillages = async (req, res) => {
   try {
-    const villages = await Village.find().populate('enumerators', 'name email');
+    const villages = await Village.find().populate('enumerator', 'name email');
     res.json(villages);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -50,6 +64,13 @@ exports.createEnumerator = async (req, res) => {
   try {
     const { name, email, password, phone, state, district, villageId } = req.body;
     
+    if (villageId) {
+      const existingVillage = await Village.findById(villageId);
+      if (existingVillage && existingVillage.enumerator) {
+        return res.status(400).json({ error: 'This village is already assigned to another enumerator' });
+      }
+    }
+
     const newUser = new User({
       name,
       email,
@@ -64,7 +85,7 @@ exports.createEnumerator = async (req, res) => {
     await newUser.save();
     
     if (villageId) {
-      await Village.findByIdAndUpdate(villageId, { $push: { enumerators: newUser._id } });
+      await Village.findByIdAndUpdate(villageId, { enumerator: newUser._id });
     }
 
     res.status(201).json({ message: 'Enumerator created successfully', enumerator: { _id: newUser._id, name: newUser.name }});
@@ -91,7 +112,7 @@ exports.deleteEnumerator = async (req, res) => {
     }
 
     if (user.villageId) {
-      await Village.findByIdAndUpdate(user.villageId, { $pull: { enumerators: user._id } });
+      await Village.findByIdAndUpdate(user.villageId, { $unset: { enumerator: "" } });
     }
 
     await User.findByIdAndDelete(id);

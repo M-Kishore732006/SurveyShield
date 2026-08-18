@@ -5,6 +5,7 @@ import { Search, Plus, Trash2, X } from 'lucide-react';
 
 const Enumerators = () => {
   const [enumerators, setEnumerators] = useState([]);
+  const [villages, setVillages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -14,12 +15,14 @@ const Enumerators = () => {
     password: '',
     phone: '',
     state: '',
-    district: ''
+    district: '',
+    villageId: ''
   });
   const { user } = useAuth();
 
   useEffect(() => {
     fetchEnumerators();
+    fetchVillages();
   }, []);
 
   const fetchEnumerators = async () => {
@@ -36,6 +39,18 @@ const Enumerators = () => {
     }
   };
 
+  const fetchVillages = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('http://localhost:5000/api/admin/villages', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setVillages(res.data);
+    } catch (err) {
+      console.error('Failed to fetch villages', err);
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this enumerator?')) return;
     try {
@@ -44,6 +59,7 @@ const Enumerators = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setEnumerators(enumerators.filter(e => e._id !== id));
+      fetchVillages(); // Refetch to update village assignment availability
     } catch (err) {
       console.error('Failed to delete enumerator', err);
       alert('Failed to delete enumerator');
@@ -55,12 +71,18 @@ const Enumerators = () => {
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/admin/enumerators', formData, {
+      // Only send non-empty villageId
+      const submitData = { ...formData };
+      if (!submitData.villageId) {
+        delete submitData.villageId;
+      }
+      await axios.post('http://localhost:5000/api/admin/enumerators', submitData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setIsModalOpen(false);
-      setFormData({ name: '', email: '', password: '', phone: '', state: '', district: '' });
+      setFormData({ name: '', email: '', password: '', phone: '', state: '', district: '', villageId: '' });
       fetchEnumerators();
+      fetchVillages();
     } catch (err) {
       console.error('Failed to create enumerator', err);
       alert('Failed to create enumerator: ' + (err.response?.data?.error || err.message));
@@ -217,6 +239,24 @@ const Enumerators = () => {
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
                   />
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Assign Village (Optional - 1 to 1)</label>
+                <select
+                  value={formData.villageId}
+                  onChange={e => setFormData({ ...formData, villageId: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="">Unassigned</option>
+                  {villages
+                    .filter(v => !v.enumerator)
+                    .map(v => (
+                      <option key={v._id} value={v._id}>
+                        {v.name} ({v.district})
+                      </option>
+                    ))
+                  }
+                </select>
               </div>
               <div className="pt-4 flex space-x-3">
                 <button 
