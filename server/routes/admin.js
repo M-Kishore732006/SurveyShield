@@ -28,4 +28,7 @@ router.get('/reports/targets', adminController.getReportTargets);
 // ML Management
 router.post('/ml/train', adminController.trainMLModel);
 
+// Statistics Trends
+router.get('/statistics/trends', adminController.getStatisticsTrends);
+
 module.exports = router;

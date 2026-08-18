@@ -97,6 +97,11 @@ To make the AI decisions explainable to human reviewers:
 * **Reports Dashboard:** Tabular lists of **Villages** and **Enumerators** filtered to show *only those who have uploaded data*.
 * **One-Click Exports:** Includes options to download detailed CSV summaries or export the entire list of raw survey records with computed anomaly indicators.
 
+### 4. Historical Demographics & Statistics
+* **Yearly Trends Charts:** Interactive trend visualization of core survey attributes including average monthly income, weekly hours worked, household size, and distribution levels for education and employment over time.
+* **Interactive District Filters:** Dropdown selector allowing users to filter statistics dynamically by specific districts or view consolidated aggregates for the entire state.
+* **Yearly Summary Cards:** Interactive comparison cards displaying summary aggregates per survey year.
+
 ---
 
 
@@ -110,7 +115,7 @@ The table below describes the role of each technology used in the SurveyShield e
 | **Frontend** | **React.js** | Single Page Application (SPA) architecture, interactive forms, and profile modals. |
 | **Frontend** | **TailwindCSS** | Clean modern look, glassmorphism, responsive navigation, and user dashboards. |
 | **Frontend** | **Lucide Icons** | Contextual icons (Trash, FileText, CheckCircle, Warning, User) for action rows. |
-| **Frontend** | **Recharts** | Interactive pie charts and bar charts displaying anomaly and validation ratios. |
+| **Frontend** | **Recharts** | Interactive pie, bar, line, and stacked charts displaying anomalies, validation ratios, and historical demographic trends. |
 | **Backend** | **Node.js & Express.js** | Core server host, REST API router, authentication middleware, and business logic. |
 | **Backend** | **Multer** | Handles file uploads, streaming the uploaded CSV files onto the filesystem. |
 | **Backend** | **CSV-Parser** | Fast stream parsing of CSV records into standard JavaScript objects for auditing. |

@@ -1,0 +1,43 @@
+SURVEYSHIELD - NEW CORE FUNCTIONALITIES PROPOSAL FOR EVALUATIONS
+================================================================
+
+To impress your evaluators and make the system feel complete, enterprise-ready, and highly advanced, you can implement the following core features. These are highly valued by project evaluators as they show real-world utility, governance, security, and research depth.
+
+---
+
+1. ADMINISTRATIVE AUDIT TRAIL & SYSTEM TIMELINE
+------------------------------------------------
+* What it is: A read-only governance dashboard in the Admin panel listing all system events in reverse chronological order.
+* Why Evaluators Love It: Shows security accountability, data lifecycle tracking, and compliance (highly critical for government/NSO platforms).
+* How it Works:
+  - The backend already saves actions to an `AuditLog` collection (e.g. logins, uploads, deletions, anomaly reviews, ML model retraining).
+  - Add an "Audit Logs" tab in the Admin Sidebar.
+  - Render a timeline showing: Who performed the action, Action description, Timestamp, and Target record.
+
+2. CSV TEMPLATE DOWNLOADER & HEADER VALIDATION
+----------------------------------------------
+* What it is: A utility on the Enumerator upload screen to download a standardized CSV file template containing correct column headers.
+* Why Evaluators Love It: Shows user-centric design (UX) and prevents runtime crashes from bad uploads before files hit the ML server.
+* How it Works:
+  - Add a button "Download CSV Template" on the Enumerator Dashboard.
+  - Clicking it downloads a CSV with headers: `household_id`, `survey_id`, `survey_date`, `age`, `gender`, `education`, `occupation`, `employment_status`, `income`, `hours_worked`, `household_size`, `interview_duration`.
+  - Frontend checks header consistency before uploading, giving instant feedback if columns don't match.
+
+3. MULTI-ALGORITHM SELECTION & WEIGHT ADJUSTMENT
+------------------------------------------------
+* What it is: A control panel in the Admin dashboard allowing admins to select which algorithm (Isolation Forest vs. Local Outlier Factor) has more weight when computing the final anomaly status.
+* Why Evaluators Love It: Elevates the machine learning aspect. It changes the project from "using an API" to "tuning and managing an AI model."
+* How it Works:
+  - In `server/controllers/surveyController.js`, the risk consolidation formula is:
+    Combined Risk = (0.7 * ML Score) + (0.3 * Rule Score)
+  - Expose a UI slider/input allowing the admin to set the ML Weight vs. Rule Weight, and save these values to a new settings collection in MongoDB.
+  - During CSV processing, retrieve these settings dynamically.
+
+4. EXPLAINABLE OUTLIER MODAL & FEATURE IMPORTANCE
+-------------------------------------------------
+* What it is: An interactive pop-up when inspecting a flagged record that highlights which specific answers contributed most to the ML decision (e.g. showing a red outline around "Hours Worked: 90" and "Employment: Unemployed").
+* Why Evaluators Love It: Demystifies Artificial Intelligence (known as XAI - Explainable AI).
+* How it Works:
+  - The Python FastAPI backend uses the decision function or path-length outputs of the Isolation Forest.
+  - We calculate the Z-Score of each attribute relative to the mean of normal survey records.
+  - We display these variances visually on the frontend using red badges (e.g., "Income is +3.1 Standard Deviations from normal") to show exactly *why* the AI isolated the survey response.

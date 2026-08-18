@@ -314,3 +314,97 @@ exports.getReportTargets = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getStatisticsTrends = async (req, res) => {
+  try {
+    const SurveyRecord = require('../models/SurveyRecord');
+    const { district } = req.query;
+
+    const query = {};
+    if (district) {
+      query.district = district;
+    }
+
+    const records = await SurveyRecord.find(query).lean();
+    const districts = await SurveyRecord.distinct('district');
+    
+    const yearlyGroups = {};
+
+    records.forEach(r => {
+      let year = null;
+      if (r.survey_date) {
+        const dateStr = String(r.survey_date);
+        const matchYear = dateStr.match(/\d{4}/);
+        if (matchYear) {
+          year = parseInt(matchYear[0]);
+        }
+      }
+      if (!year || isNaN(year) || year < 1900 || year > 2100) {
+        year = new Date(r.createdAt).getFullYear();
+      }
+
+      if (!yearlyGroups[year]) {
+        yearlyGroups[year] = {
+          year,
+          totalRecords: 0,
+          incomes: [],
+          hours: [],
+          householdSizes: [],
+          education: {},
+          employment: {}
+        };
+      }
+
+      const group = yearlyGroups[year];
+      group.totalRecords += 1;
+
+      // Income parsing
+      const incomeVal = parseFloat(r.income);
+      if (!isNaN(incomeVal) && incomeVal >= 0 && incomeVal < 10000000) {
+        group.incomes.push(incomeVal);
+      }
+
+      // Hours worked parsing
+      const hoursVal = parseFloat(r.hours_worked);
+      if (!isNaN(hoursVal) && hoursVal >= 0 && hoursVal <= 168) {
+        group.hours.push(hoursVal);
+      }
+
+      // Household size parsing
+      const hhSizeVal = parseInt(r.household_size);
+      if (!isNaN(hhSizeVal) && hhSizeVal > 0) {
+        group.householdSizes.push(hhSizeVal);
+      }
+
+      // Education counting
+      const edu = r.education || 'Unknown';
+      group.education[edu] = (group.education[edu] || 0) + 1;
+
+      // Employment counting
+      const emp = r.employment_status || 'Unknown';
+      group.employment[emp] = (group.employment[emp] || 0) + 1;
+    });
+
+    const trends = Object.keys(yearlyGroups).map(y => {
+      const g = yearlyGroups[y];
+      const avgIncome = g.incomes.length > 0 ? parseFloat((g.incomes.reduce((a, b) => a + b, 0) / g.incomes.length).toFixed(2)) : 0;
+      const avgHours = g.hours.length > 0 ? parseFloat((g.hours.reduce((a, b) => a + b, 0) / g.hours.length).toFixed(1)) : 0;
+      const avgSize = g.householdSizes.length > 0 ? parseFloat((g.householdSizes.reduce((a, b) => a + b, 0) / g.householdSizes.length).toFixed(1)) : 0;
+
+      return {
+        year: parseInt(y),
+        totalRecords: g.totalRecords,
+        averageIncome: avgIncome,
+        averageHoursWorked: avgHours,
+        averageHouseholdSize: avgSize,
+        education: g.education,
+        employment: g.employment
+      };
+    }).sort((a, b) => a.year - b.year);
+
+    res.json({ trends, districts });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+

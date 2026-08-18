@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Users, Map, FileText, AlertTriangle, FileBarChart, LogOut, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Users, Map, FileText, AlertTriangle, FileBarChart, LogOut, ShieldCheck, TrendingUp } from 'lucide-react';
 
 const SidebarItem = ({ to, icon: Icon, label, active }) => (
   <Link
@@ -39,6 +39,7 @@ const AdminLayout = () => {
           <SidebarItem to="/admin/surveys" icon={FileText} label="Survey Data" active={location.pathname === '/admin/surveys'} />
           <SidebarItem to="/admin/flagged" icon={AlertTriangle} label="Flagged Records" active={location.pathname === '/admin/flagged'} />
           <SidebarItem to="/admin/reports" icon={FileBarChart} label="Reports" active={location.pathname === '/admin/reports'} />
+          <SidebarItem to="/admin/statistics" icon={TrendingUp} label="Statistics" active={location.pathname === '/admin/statistics'} />
         </div>
 
         <div className="p-4 border-t border-slate-200">

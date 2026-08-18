@@ -10,6 +10,7 @@ import Villages from './pages/admin/Villages';
 import FlaggedRecords from './pages/admin/FlaggedRecords';
 import Surveys from './pages/admin/Surveys';
 import Reports from './pages/admin/Reports';
+import Statistics from './pages/admin/Statistics';
 import EnumeratorDashboard from './pages/enumerator/Dashboard';
 import UploadDetails from './pages/enumerator/UploadDetails';
 import Unauthorized from './pages/Unauthorized';
@@ -38,6 +39,7 @@ function App() {
               <Route path="surveys" element={<Surveys />} />
               <Route path="uploads/:id" element={<UploadDetails />} />
               <Route path="reports" element={<Reports />} />
+              <Route path="statistics" element={<Statistics />} />
               {/* Add more admin routes here */}
               <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
             </Route>
