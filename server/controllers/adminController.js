@@ -377,7 +377,19 @@ exports.getStatisticsTrends = async (req, res) => {
       }
 
       // Education counting
-      const edu = r.education || 'Unknown';
+      const rawEdu = r.education || '8th';
+      const mapEducation = (eduVal) => {
+        const e = String(eduVal).trim().toLowerCase();
+        if (e === 'primary' || e === '8th' || e === '8') return '8th';
+        if (e === 'secondary' || e === '10th' || e === '10') return '10th';
+        if (e === 'higher' || e === '12th' || e === '12' || e === 'higher secondary') return '12th';
+        if (e === 'none') return '8th';
+        if (e === 'ug' || e === 'undergraduate' || e.includes('under')) return 'UG';
+        if (e === 'pg' || e === 'postgraduate' || e.includes('post')) return 'PG';
+        if (e === 'phd' || e === 'doctorate' || e.includes('phd')) return 'PhD';
+        return eduVal;
+      };
+      const edu = mapEducation(rawEdu);
       group.education[edu] = (group.education[edu] || 0) + 1;
 
       // Employment counting
