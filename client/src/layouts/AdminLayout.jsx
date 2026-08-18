@@ -6,12 +6,14 @@ import { LayoutDashboard, Users, Map, FileText, AlertTriangle, FileBarChart, Log
 const SidebarItem = ({ to, icon: Icon, label, active }) => (
   <Link
     to={to}
-    className={`flex items-center space-x-3 px-4 py-3 rounded-lg mb-1 transition-colors ${
-      active ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+    className={`flex items-center space-x-3 px-4 py-2.5 rounded-lg mb-1 transition-all duration-150 ${
+      active 
+        ? 'bg-blue-50/70 text-blue-700 font-semibold shadow-xs' 
+        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950 font-medium'
     }`}
   >
-    <Icon className={`w-5 h-5 ${active ? 'text-blue-600' : 'text-slate-400'}`} />
-    <span>{label}</span>
+    <Icon className={`w-4.5 h-4.5 ${active ? 'text-blue-600' : 'text-slate-400'}`} />
+    <span className="text-sm">{label}</span>
   </Link>
 );
 

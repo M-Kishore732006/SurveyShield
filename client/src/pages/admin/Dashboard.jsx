@@ -39,8 +39,19 @@ const AdminDashboard = () => {
     fetchStats();
   }, []);
 
-  if (loading) return <div className="p-8">Loading...</div>;
-  if (!stats) return <div className="p-8">Error loading dashboard data.</div>;
+  if (loading) return (
+    <div className="p-8 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[60vh] space-y-3">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      <p className="text-sm font-semibold text-slate-500">Loading dashboard...</p>
+    </div>
+  );
+
+  if (!stats) return (
+    <div className="p-8 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[60vh] text-slate-550">
+      <AlertOctagon className="w-12 h-12 text-rose-500 mb-3" />
+      <p className="font-semibold">Error loading dashboard data.</p>
+    </div>
+  );
 
   const handleRetrain = async () => {
     try {
@@ -61,37 +72,37 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
+    <div className="p-8 max-w-7xl mx-auto space-y-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Admin Dashboard</h1>
-          <p className="text-slate-500 mt-1">Welcome back, {user?.name}</p>
+          <p className="text-slate-550 text-sm mt-0.5">Welcome back, {user?.name}</p>
         </div>
-        <div className="mt-4 md:mt-0 flex flex-col items-end">
+        <div className="flex flex-col items-end w-full md:w-auto">
           <button 
             onClick={handleRetrain}
             disabled={retraining}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-colors flex items-center space-x-2 disabled:opacity-50"
+            className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-semibold shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
           >
             <Activity className="w-4 h-4" />
             <span>{retraining ? 'Retraining Model...' : 'Retrain ML Model'}</span>
           </button>
           {mlMessage && (
-            <p className={`text-xs mt-2 ${mlMessage.includes('Failed') || mlMessage.includes('Not enough') ? 'text-red-500' : 'text-emerald-600'}`}>
+            <p className={`text-xs font-semibold mt-2 ${mlMessage.includes('Failed') || mlMessage.includes('Not enough') ? 'text-rose-650' : 'text-emerald-650'}`}>
               {mlMessage}
             </p>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <DashboardCard title="Total Enumerators" value={stats.totalEnumerators} icon={Users} color="bg-blue-500" />
         <DashboardCard title="Total Villages" value={stats.totalVillages} icon={MapPin} color="bg-indigo-500" />
         <DashboardCard title="Survey Records" value={stats.totalSurveyRecords} icon={FileText} color="bg-emerald-500" />
         <DashboardCard title="Records Validated" value={stats.recordsValidated} icon={CheckCircle} color="bg-teal-500" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <DashboardCard title="Records Flagged" value={stats.recordsFlagged} icon={AlertTriangle} color="bg-amber-500" />
         <DashboardCard title="High-Risk Records" value={stats.highRiskRecords} icon={AlertOctagon} color="bg-rose-500" />
         <DashboardCard title="Avg Quality Score" value={`${stats.averageDataQualityScore}/100`} icon={Activity} color="bg-violet-500" />
@@ -99,16 +110,18 @@ const AdminDashboard = () => {
 
       {/* Placeholders for Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-          <h3 className="text-lg font-semibold mb-4">Survey Processing Trend</h3>
-          <div className="h-64 flex items-center justify-center bg-slate-50 rounded text-slate-400">
-            Chart Placeholder
+        <div className="bg-white p-6 rounded-xl border border-slate-150/80 shadow-xs">
+          <h3 className="text-base font-semibold mb-4 text-slate-800">Survey Processing Trend</h3>
+          <div className="h-64 flex flex-col items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100 text-slate-400">
+            <Activity className="w-8 h-8 text-slate-300 mb-2" />
+            <span className="text-sm font-semibold text-slate-400">Processing trends will appear here</span>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-          <h3 className="text-lg font-semibold mb-4">Anomaly Distribution</h3>
-          <div className="h-64 flex items-center justify-center bg-slate-50 rounded text-slate-400">
-            Chart Placeholder
+        <div className="bg-white p-6 rounded-xl border border-slate-150/80 shadow-xs">
+          <h3 className="text-base font-semibold mb-4 text-slate-800">Anomaly Distribution</h3>
+          <div className="h-64 flex flex-col items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100 text-slate-400">
+            <AlertTriangle className="w-8 h-8 text-slate-300 mb-2" />
+            <span className="text-sm font-semibold text-slate-400">Anomaly charts will appear here</span>
           </div>
         </div>
       </div>

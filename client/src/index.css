@@ -10,6 +10,82 @@
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900;
+    @apply bg-slate-50/50 text-slate-800 antialiased selection:bg-blue-100 selection:text-blue-900;
   }
+
+  /* Typography Refinement */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-slate-900 font-semibold tracking-tight;
+  }
+
+  /* Polishing form controls globally */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  select,
+  textarea {
+    @apply px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50/50 hover:bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all duration-150 outline-none placeholder-slate-400 font-medium;
+  }
+
+  /* Table styling polished for high readability */
+  .overflow-x-auto {
+    @apply rounded-2xl border border-slate-100 shadow-xs overflow-hidden;
+  }
+
+  table {
+    @apply w-full text-left border-collapse overflow-hidden;
+  }
+  
+  thead {
+    @apply bg-slate-50/60 sticky top-0 z-1 border-b border-slate-100;
+  }
+
+  th {
+    @apply font-bold text-slate-500 tracking-wider text-xs uppercase px-6 py-4 border-b border-slate-100;
+  }
+
+  tr {
+    @apply border-b border-slate-100 hover:bg-slate-50/40 transition-colors duration-150;
+  }
+
+  td {
+    @apply py-4 px-6 text-sm text-slate-600 font-medium align-middle;
+  }
+
+  /* Consistent smooth transitions on buttons */
+  button, a {
+    @apply transition-all duration-150 ease-in-out;
+  }
+
+  button {
+    @apply active:scale-[0.97] cursor-pointer;
+  }
+
+  /* Badge styling refinement */
+  .rounded-full {
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Sleek modern scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-200/80 rounded-full hover:bg-slate-300 transition-colors;
+  }
+}
+
+/* Polishing cards styling globally to feel premium yet highly restrained */
+.bg-white.rounded-xl.shadow-sm.border.border-slate-100 {
+  @apply border-slate-200/60 shadow-xs hover:shadow-sm/80 transition-all duration-200;
+}
+.bg-white.rounded-2xl.border.border-slate-100.shadow-sm {
+  @apply border-slate-200/60 shadow-xs hover:shadow-sm/80 transition-all duration-200;
 }
