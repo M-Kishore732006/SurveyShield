@@ -21,7 +21,7 @@ async function seedData() {
     const admin = await User.create({
       name: 'System Admin',
       email: 'admin@gmail.com',
-      password: '732006',
+      password: '123',
       role: 'admin'
     });
     console.log('Admin created.');
@@ -46,7 +46,7 @@ async function seedData() {
       const e = await User.create({
         name: `Enumerator ${i}`,
         email: `enum${i}@surveyshield.gov`,
-        password: 'enum123',
+        password: '123',
         role: 'enumerator',
         villageId: villages[vIndex]._id
       });

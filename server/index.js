@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 
+// Trigger nodemon restart
 const app = express();
 
 // Middleware
