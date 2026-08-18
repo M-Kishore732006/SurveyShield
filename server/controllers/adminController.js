@@ -214,3 +214,103 @@ exports.trainMLModel = async (req, res) => {
     res.status(500).json({ error: 'Failed to train ML model: ' + (err.response?.data?.detail || err.message) });
   }
 };
+
+exports.getReportData = async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    const SurveyRecord = require('../models/SurveyRecord');
+    const { filterType, filterId } = req.query;
+
+    if (!filterType || !filterId) {
+      return res.status(400).json({ message: 'filterType and filterId are required' });
+    }
+
+    let matchQuery = {};
+    if (filterType === 'village') {
+      matchQuery.village_id = new mongoose.Types.ObjectId(filterId);
+    } else if (filterType === 'enumerator') {
+      matchQuery.enumerator_id = new mongoose.Types.ObjectId(filterId);
+    } else {
+      return res.status(400).json({ message: 'Invalid filterType. Must be village or enumerator' });
+    }
+
+    // Retrieve records matching filter
+    const records = await SurveyRecord.find(matchQuery)
+      .populate('enumerator_id', 'name email')
+      .populate('village_id', 'name villageId district state')
+      .sort({ createdAt: -1 });
+
+    // Calculate aggregations/metrics manually for robustness
+    let totalRecords = records.length;
+    let normalCount = 0;
+    let lowRiskCount = 0;
+    let mediumRiskCount = 0;
+    let highRiskCount = 0;
+
+    let totalAge = 0, ageCount = 0;
+    let totalIncome = 0, incomeCount = 0;
+    let totalHours = 0, hoursCount = 0;
+
+    records.forEach(r => {
+      // Risk level counts
+      if (r.riskLevel === 'High Risk') highRiskCount++;
+      else if (r.riskLevel === 'Medium Risk') mediumRiskCount++;
+      else if (r.riskLevel === 'Low Risk') lowRiskCount++;
+      else normalCount++;
+
+      // Averages parsing
+      const ageVal = parseInt(r.age);
+      if (!isNaN(ageVal)) {
+        totalAge += ageVal;
+        ageCount++;
+      }
+
+      const incomeVal = parseFloat(r.income);
+      if (!isNaN(incomeVal)) {
+        totalIncome += incomeVal;
+        incomeCount++;
+      }
+
+      const hoursVal = parseFloat(r.hours_worked);
+      if (!isNaN(hoursVal)) {
+        totalHours += hoursVal;
+        hoursCount++;
+      }
+    });
+
+    const averageAge = ageCount > 0 ? parseFloat((totalAge / ageCount).toFixed(1)) : 0;
+    const averageIncome = incomeCount > 0 ? parseFloat((totalIncome / incomeCount).toFixed(2)) : 0;
+    const averageHoursWorked = hoursCount > 0 ? parseFloat((totalHours / hoursCount).toFixed(1)) : 0;
+
+    res.json({
+      summary: {
+        totalRecords,
+        normalCount,
+        lowRiskCount,
+        mediumRiskCount,
+        highRiskCount,
+        averageAge,
+        averageIncome,
+        averageHoursWorked
+      },
+      records
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getReportTargets = async (req, res) => {
+  try {
+    const SurveyRecord = require('../models/SurveyRecord');
+    const activeVillageIds = await SurveyRecord.distinct('village_id');
+    const activeEnumeratorIds = await SurveyRecord.distinct('enumerator_id');
+
+    const villages = await Village.find({ _id: { $in: activeVillageIds } }).populate('enumerator', 'name email');
+    const enumerators = await User.find({ _id: { $in: activeEnumeratorIds }, role: 'enumerator' }).populate('villageId', 'name district');
+
+    res.json({ villages, enumerators });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

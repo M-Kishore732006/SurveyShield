@@ -21,6 +21,10 @@ router.delete('/enumerators/:id', adminController.deleteEnumerator);
 router.get('/validation/flagged', adminController.getFlaggedRecords);
 router.post('/validation/:id/review', adminController.reviewRecord);
 
+// Reports
+router.get('/reports/data', adminController.getReportData);
+router.get('/reports/targets', adminController.getReportTargets);
+
 // ML Management
 router.post('/ml/train', adminController.trainMLModel);
 
