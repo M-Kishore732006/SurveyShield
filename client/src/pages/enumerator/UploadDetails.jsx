@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, FileText, CheckCircle, AlertTriangle, ShieldAlert, Search } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle, AlertTriangle, ShieldAlert, Search, User, X } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const StatCard = ({ title, value, icon: Icon, color }) => (
   <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center space-x-4">
@@ -17,6 +18,7 @@ const StatCard = ({ title, value, icon: Icon, color }) => (
 
 const UploadDetails = () => {
   const { id } = useParams();
+  const { user } = useAuth();
   const [upload, setUpload] = useState(null);
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,9 +28,29 @@ const UploadDetails = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
   const [riskLevel, setRiskLevel] = useState('All');
+  
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profileData, setProfileData] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  const fetchProfile = async () => {
+    setProfileLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('http://localhost:5000/api/auth/profile', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setProfileData(res.data);
+    } catch (err) {
+      console.error('Failed to fetch profile', err);
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchDetails();
+    fetchProfile();
   }, [id]);
 
   useEffect(() => {
@@ -69,19 +91,29 @@ const UploadDetails = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col pb-12">
       <nav className="bg-white border-b border-slate-200 py-4 px-8 flex items-center sticky top-0 z-10 shadow-sm">
-        <Link to="/enumerator/dashboard" className="text-slate-500 hover:text-blue-600 mr-4 transition-colors">
+        <Link 
+          to={user?.role === 'admin' ? "/admin/surveys" : "/enumerator/dashboard"} 
+          className="text-slate-500 hover:text-blue-600 mr-4 transition-colors"
+        >
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div className="text-lg font-bold text-slate-800 flex items-center">
           <FileText className="w-5 h-5 mr-2 text-blue-500" />
           {upload.fileName}
         </div>
-        <div className="ml-auto flex space-x-4">
+        <div className="ml-auto flex items-center space-x-4">
           <span className={`px-3 py-1 rounded-full text-xs font-bold ${
             upload.processingStatus === 'Completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
           }`}>
             {upload.processingStatus}
           </span>
+          <button 
+            onClick={() => setIsProfileOpen(true)}
+            className="text-slate-500 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 p-2 rounded-lg transition-colors flex items-center space-x-2"
+          >
+            <User className="w-4 h-4" />
+            <span className="text-sm font-medium">Profile</span>
+          </button>
         </div>
       </nav>
 
@@ -223,6 +255,105 @@ const UploadDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* Profile Details Modal */}
+      {isProfileOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all duration-300 scale-100 text-left">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white relative">
+              <button 
+                onClick={() => setIsProfileOpen(false)} 
+                className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-1.5 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="flex items-center space-x-4">
+                <div className="bg-white/20 p-3 rounded-full">
+                  <User className="w-10 h-10 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">{profileData?.name || user?.name}</h2>
+                  <span className="text-xs bg-white/20 px-2.5 py-1 rounded-full font-semibold uppercase tracking-wider text-white/90">
+                    Field Enumerator
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Profile Content */}
+            <div className="p-6 space-y-5 bg-white">
+              {profileLoading ? (
+                <div className="py-12 flex justify-center items-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : profileData ? (
+                <>
+                  {/* Account Section */}
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Account Details</h3>
+                    <div className="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Email Address</span>
+                        <span className="font-semibold text-slate-800">{profileData.email}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Phone Number</span>
+                        <span className="font-semibold text-slate-800">{profileData.phone || 'Not Provided'}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Location Jurisdiction</span>
+                        <span className="font-semibold text-slate-800">{profileData.district}, {profileData.state}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Assigned Village Section */}
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Assigned Village</h3>
+                    {profileData.villageId ? (
+                      <div className="bg-blue-50/80 p-4 rounded-xl border border-blue-100/50 space-y-3">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-blue-600/80 font-medium">Village Name</span>
+                          <span className="font-bold text-blue-900">{profileData.villageId.name}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-blue-600/80 font-medium">Village ID</span>
+                          <span className="font-mono font-bold text-blue-900 bg-blue-100/60 px-2 py-0.5 rounded text-xs">
+                            {profileData.villageId.villageId}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-blue-600/80 font-medium">District & State</span>
+                          <span className="font-semibold text-blue-900">
+                            {profileData.villageId.district}, {profileData.villageId.state}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-center text-sm text-amber-700">
+                        No village currently assigned by Admin.
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center text-slate-500 text-sm py-6">
+                  Unable to load profile data.
+                </div>
+              )}
+
+              {/* Close Button */}
+              <button 
+                onClick={() => setIsProfileOpen(false)}
+                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-semibold transition-all mt-2"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

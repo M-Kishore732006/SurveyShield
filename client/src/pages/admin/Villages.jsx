@@ -1,15 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Plus, MapPin, Download } from 'lucide-react';
+import { Search, Plus, MapPin, Download, X } from 'lucide-react';
 
 const Villages = () => {
   const [villages, setVillages] = useState([]);
+  const [enumerators, setEnumerators] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    villageId: '',
+    name: '',
+    district: '',
+    state: '',
+    enumerator: ''
+  });
   const { user } = useAuth();
 
   useEffect(() => {
     fetchVillages();
+    fetchEnumerators();
   }, []);
 
   const fetchVillages = async () => {
@@ -23,6 +34,18 @@ const Villages = () => {
       console.error('Failed to fetch villages', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchEnumerators = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('http://localhost:5000/api/admin/enumerators', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setEnumerators(res.data);
+    } catch (err) {
+      console.error('Failed to fetch enumerators', err);
     }
   };
 
@@ -47,6 +70,30 @@ const Villages = () => {
     }
   };
 
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const submitData = { ...formData };
+      if (!submitData.enumerator) {
+        delete submitData.enumerator;
+      }
+      await axios.post('http://localhost:5000/api/admin/villages', submitData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setIsModalOpen(false);
+      setFormData({ villageId: '', name: '', district: '', state: '', enumerator: '' });
+      fetchVillages();
+      fetchEnumerators();
+    } catch (err) {
+      console.error('Failed to create village', err);
+      alert('Failed to create village: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-8">
@@ -54,7 +101,10 @@ const Villages = () => {
           <h1 className="text-2xl font-bold text-slate-900">Villages</h1>
           <p className="text-slate-500 mt-1">Manage survey locations and data quality</p>
         </div>
-        <button className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+        >
           <Plus className="w-5 h-5" />
           <span>Add Village</span>
         </button>
@@ -142,6 +192,88 @@ const Villages = () => {
           </table>
         </div>
       </div>
+
+      {/* Add Village Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="flex justify-between items-center p-6 border-b border-slate-100">
+              <h2 className="text-xl font-bold text-slate-800">Add New Village</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreate} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Village ID</label>
+                <input 
+                  type="text" required placeholder="e.g. V1011"
+                  value={formData.villageId} onChange={e => setFormData({...formData, villageId: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Village Name</label>
+                <input 
+                  type="text" required placeholder="e.g. Rampur"
+                  value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">State</label>
+                  <input 
+                    type="text" required placeholder="e.g. State X"
+                    value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">District</label>
+                  <input 
+                    type="text" required placeholder="e.g. District A"
+                    value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Assign Enumerator (Optional - 1 to 1)</label>
+                <select
+                  value={formData.enumerator}
+                  onChange={e => setFormData({ ...formData, enumerator: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                >
+                  <option value="">Unassigned</option>
+                  {enumerators
+                    .filter(enumr => !enumr.villageId)
+                    .map(enumr => (
+                      <option key={enumr._id} value={enumr._id}>
+                        {enumr.name} ({enumr.email})
+                      </option>
+                    ))
+                  }
+                </select>
+              </div>
+              <div className="pt-4 flex space-x-3">
+                <button 
+                  type="button" onClick={() => setIsModalOpen(false)}
+                  className="flex-1 py-2 px-4 border border-slate-200 text-slate-600 rounded-lg font-medium hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" disabled={isSubmitting}
+                  className="flex-1 py-2 px-4 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Adding...' : 'Add Village'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -31,6 +31,12 @@ exports.createVillage = async (req, res) => {
   try {
     const { villageId, name, district, state, enumerator } = req.body;
 
+    // Check if village ID already exists
+    const existingVillage = await Village.findOne({ villageId });
+    if (existingVillage) {
+      return res.status(400).json({ error: 'Village ID already exists' });
+    }
+
     if (enumerator) {
       const existingUser = await User.findById(enumerator);
       if (existingUser && existingUser.villageId) {

@@ -16,5 +16,6 @@ router.get('/', surveyController.getSurveys);
 router.get('/uploads', surveyController.getUploads);
 router.get('/uploads/:uploadId', surveyController.getUploadDetails);
 router.get('/uploads/:uploadId/records', surveyController.getUploadRecords);
+router.delete('/uploads/:uploadId', surveyController.deleteUpload);
 
 module.exports = router;

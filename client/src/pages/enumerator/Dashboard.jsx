@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Upload, FileText, CheckCircle, AlertTriangle, LogOut, BarChart2, Eye } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertTriangle, LogOut, BarChart2, Eye, User, X, Trash2 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const StatCard = ({ title, value, icon: Icon, color }) => (
@@ -23,10 +23,29 @@ const EnumeratorDashboard = () => {
   const [uploadStatus, setUploadStatus] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [datasets, setDatasets] = useState([]);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profileData, setProfileData] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   useEffect(() => {
     fetchDatasets();
+    fetchProfile();
   }, []);
+
+  const fetchProfile = async () => {
+    setProfileLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('http://localhost:5000/api/auth/profile', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setProfileData(res.data);
+    } catch (err) {
+      console.error('Failed to fetch profile', err);
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   const fetchDatasets = async () => {
     try {
@@ -37,6 +56,21 @@ const EnumeratorDashboard = () => {
       setDatasets(res.data);
     } catch (err) {
       console.error('Error fetching datasets', err);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this dataset? This will permanently delete the CSV file and all its associated survey records from the database.')) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.delete(`http://localhost:5000/api/surveys/uploads/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        fetchDatasets();
+      } catch (err) {
+        console.error('Error deleting dataset', err);
+        alert('Failed to delete dataset. Please try again.');
+      }
     }
   };
 
@@ -97,6 +131,13 @@ const EnumeratorDashboard = () => {
              <span className="text-slate-800 font-semibold text-sm">Hello, {user?.name}</span>
              <span className="text-slate-500 text-xs">Enumerator ID: {user?.id?.substring(0, 8)}</span>
           </div>
+          <button 
+            onClick={() => setIsProfileOpen(true)}
+            className="text-slate-500 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 p-2 rounded-lg transition-colors flex items-center space-x-2"
+          >
+            <User className="w-4 h-4" />
+            <span className="text-sm font-medium">Profile</span>
+          </button>
           <button 
             onClick={logout} 
             className="text-slate-500 hover:text-red-600 bg-slate-100 hover:bg-red-50 p-2 rounded-lg transition-colors flex items-center space-x-2"
@@ -272,7 +313,7 @@ const EnumeratorDashboard = () => {
                                 {dataset.processingStatus}
                             </span>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4 flex items-center space-x-4">
                                 <Link 
                                     to={`/enumerator/uploads/${dataset._id}`}
                                     className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 text-sm font-bold"
@@ -280,6 +321,13 @@ const EnumeratorDashboard = () => {
                                     <Eye className="w-4 h-4" />
                                     <span>View Details</span>
                                 </Link>
+                                <button 
+                                    onClick={() => handleDelete(dataset._id)}
+                                    className="flex items-center space-x-1 text-red-600 hover:text-red-800 text-sm font-bold bg-transparent border-none p-0 cursor-pointer transition-colors"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    <span>Delete</span>
+                                </button>
                             </td>
                         </tr>
                         ))
@@ -291,6 +339,105 @@ const EnumeratorDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Profile Details Modal */}
+      {isProfileOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all duration-300 scale-100">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white relative">
+              <button 
+                onClick={() => setIsProfileOpen(false)} 
+                className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-1.5 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="flex items-center space-x-4">
+                <div className="bg-white/20 p-3 rounded-full">
+                  <User className="w-10 h-10 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">{profileData?.name || user?.name}</h2>
+                  <span className="text-xs bg-white/20 px-2.5 py-1 rounded-full font-semibold uppercase tracking-wider text-white/90">
+                    Field Enumerator
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Profile Content */}
+            <div className="p-6 space-y-5 bg-white">
+              {profileLoading ? (
+                <div className="py-12 flex justify-center items-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : profileData ? (
+                <>
+                  {/* Account Section */}
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Account Details</h3>
+                    <div className="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Email Address</span>
+                        <span className="font-semibold text-slate-800">{profileData.email}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Phone Number</span>
+                        <span className="font-semibold text-slate-800">{profileData.phone || 'Not Provided'}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Location Jurisdiction</span>
+                        <span className="font-semibold text-slate-800">{profileData.district}, {profileData.state}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Assigned Village Section */}
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Assigned Village</h3>
+                    {profileData.villageId ? (
+                      <div className="bg-blue-50/80 p-4 rounded-xl border border-blue-100/50 space-y-3">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-blue-600/80 font-medium">Village Name</span>
+                          <span className="font-bold text-blue-900">{profileData.villageId.name}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-blue-600/80 font-medium">Village ID</span>
+                          <span className="font-mono font-bold text-blue-900 bg-blue-100/60 px-2 py-0.5 rounded text-xs">
+                            {profileData.villageId.villageId}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-blue-600/80 font-medium">District & State</span>
+                          <span className="font-semibold text-blue-900">
+                            {profileData.villageId.district}, {profileData.villageId.state}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-center text-sm text-amber-700">
+                        No village currently assigned by Admin.
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center text-slate-500 text-sm py-6">
+                  Unable to load profile data.
+                </div>
+              )}
+
+              {/* Close Button */}
+              <button 
+                onClick={() => setIsProfileOpen(false)}
+                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-semibold transition-all mt-2"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

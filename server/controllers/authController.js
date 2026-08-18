@@ -42,3 +42,19 @@ exports.login = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getProfile = async (req, res) => {
+  try {
+    const userProfile = await User.findById(req.user.id)
+      .select('-password')
+      .populate('villageId', 'name district state villageId');
+    
+    if (!userProfile) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.json(userProfile);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

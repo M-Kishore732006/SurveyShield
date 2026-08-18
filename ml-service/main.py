@@ -130,10 +130,10 @@ def predict_anomalies(request: PredictRequest):
         
         severity = "LOW"
         is_anomaly = False
-        if score >= 71:
+        if score >= 70:
             severity = "HIGH"
             is_anomaly = True
-        elif score >= 31:
+        elif score >= 50:
             severity = "MEDIUM"
             is_anomaly = True
             

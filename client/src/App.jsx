@@ -36,6 +36,7 @@ function App() {
               <Route path="villages" element={<Villages />} />
               <Route path="flagged" element={<FlaggedRecords />} />
               <Route path="surveys" element={<Surveys />} />
+              <Route path="uploads/:id" element={<UploadDetails />} />
               <Route path="reports" element={<Reports />} />
               {/* Add more admin routes here */}
               <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />

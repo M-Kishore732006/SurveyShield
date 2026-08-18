@@ -7,16 +7,16 @@ const surveyRecordSchema = new mongoose.Schema({
   enumerator_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   village_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Village', required: true },
   district: { type: String },
-  age: { type: Number },
+  age: { type: mongoose.Schema.Types.Mixed },
   gender: { type: String },
   education: { type: String },
   occupation: { type: String },
   employment_status: { type: String },
-  income: { type: Number },
-  hours_worked: { type: Number },
-  household_size: { type: Number },
-  interview_duration: { type: Number }, // in minutes
-  survey_date: { type: Date, required: true },
+  income: { type: mongoose.Schema.Types.Mixed },
+  hours_worked: { type: mongoose.Schema.Types.Mixed },
+  household_size: { type: mongoose.Schema.Types.Mixed },
+  interview_duration: { type: mongoose.Schema.Types.Mixed }, // in minutes
+  survey_date: { type: mongoose.Schema.Types.Mixed, required: true },
 
   // Dynamic Fields (any CSV headers not matched above)
   dynamicData: { type: Map, of: mongoose.Schema.Types.Mixed },

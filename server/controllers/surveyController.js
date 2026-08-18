@@ -2,6 +2,7 @@ const fs = require('fs');
 const csv = require('csv-parser');
 const SurveyRecord = require('../models/SurveyRecord');
 const Dataset = require('../models/Dataset');
+const Village = require('../models/Village');
 const axios = require('axios');
 
 // Helper to run Rule-Based Validation
@@ -36,6 +37,41 @@ const runRuleValidation = (data) => {
     messages.push('Unemployed individual reports working hours');
   }
 
+  // Validate survey date correctness
+  const dateStr = String(data.survey_date || '');
+  let isDateValid = true;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) {
+    isDateValid = false;
+  } else {
+    // Check for DD-MM-YYYY format
+    const match = dateStr.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
+    if (match) {
+      const day = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10);
+      const year = parseInt(match[3], 10);
+      if (month < 1 || month > 12 || day < 1 || day > 31) {
+        isDateValid = false;
+      }
+    } else {
+      // Check for YYYY-MM-DD format
+      const matchY = dateStr.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/);
+      if (matchY) {
+        const year = parseInt(matchY[1], 10);
+        const month = parseInt(matchY[2], 10);
+        const day = parseInt(matchY[3], 10);
+        if (month < 1 || month > 12 || day < 1 || day > 31) {
+          isDateValid = false;
+        }
+      }
+    }
+  }
+
+  if (!isDateValid) {
+    score -= 25;
+    messages.push('Invalid survey date');
+  }
+
   score = Math.max(0, score); 
   return { score, messages };
 };
@@ -52,6 +88,15 @@ exports.uploadSurveyData = async (req, res) => {
       processingStatus: 'Processing'
     });
     await newDataset.save();
+
+    // Fetch villages to map villageId string (e.g. V1001) to ObjectId
+    const allVillages = await Village.find({}, '_id villageId');
+    const villageMap = new Map();
+    allVillages.forEach(v => {
+      villageMap.set(v.villageId, v._id);
+      villageMap.set(v._id.toString(), v._id);
+    });
+    const fallbackVillageId = allVillages.length > 0 ? allVillages[0]._id : null;
 
     const results = [];
     const standardFields = ['household_id', 'survey_id', 'village_id', 'district', 'age', 'gender', 'education', 'occupation', 'employment_status', 'income', 'hours_worked', 'household_size', 'interview_duration', 'survey_date', 'enumerator_id'];
@@ -157,7 +202,7 @@ exports.uploadSurveyData = async (req, res) => {
             survey_id: row.survey_id || 'UNKNOWN',
             uploadId: newDataset._id,
             enumerator_id: req.user.id,
-            village_id: req.user.villageId || row.village_id || null,
+            village_id: req.user.villageId || villageMap.get(row.village_id) || fallbackVillageId,
             district: row.district,
             age: row.age,
             gender: row.gender,
@@ -230,8 +275,15 @@ exports.getSurveys = async (req, res) => {
 
 exports.getUploads = async (req, res) => {
   try {
-    const query = req.user.role === 'enumerator' ? { enumeratorId: req.user.id } : {};
-    const uploads = await Dataset.find(query).sort({ uploadDate: -1 });
+    let query = {};
+    if (req.user.role === 'enumerator') {
+      query.enumeratorId = req.user.id;
+    } else if (req.query.enumeratorId) {
+      query.enumeratorId = req.query.enumeratorId;
+    }
+    const uploads = await Dataset.find(query)
+      .populate('enumeratorId', 'name email')
+      .sort({ uploadDate: -1 });
     res.json(uploads);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -281,6 +333,32 @@ exports.getUploadRecords = async (req, res) => {
       totalPages: Math.ceil(total / limit),
       currentPage: parseInt(page)
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.deleteUpload = async (req, res) => {
+  try {
+    const { uploadId } = req.params;
+    const upload = await Dataset.findById(uploadId);
+    
+    if (!upload) {
+      return res.status(404).json({ message: 'Dataset not found' });
+    }
+
+    // Check authorization (must be the owner enumerator or an admin)
+    if (req.user.role === 'enumerator' && upload.enumeratorId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Unauthorized: You can only delete your own datasets' });
+    }
+
+    // Delete all survey records belonging to this dataset/upload
+    await SurveyRecord.deleteMany({ uploadId: uploadId });
+
+    // Delete the dataset metadata entry
+    await Dataset.findByIdAndDelete(uploadId);
+
+    res.json({ message: 'Dataset and all its associated survey records successfully deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
