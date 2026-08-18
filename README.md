@@ -99,8 +99,60 @@ To make the AI decisions explainable to human reviewers:
 
 ---
 
-## 💻 Tech Stack
-* **Frontend:** React, TailwindCSS, Lucide Icons, Recharts, React Router Dom.
-* **Backend:** Node.js, Express, Multer, CSV-Parser.
-* **Database:** MongoDB Atlas, Mongoose ODM.
-* **ML Microservice:** FastAPI, Uvicorn, Pandas, Scikit-learn, Joblib.
+## 💻 Tech Stack & Technology Mapping
+
+The table below describes the role of each technology used in the SurveyShield ecosystem:
+
+| Layer | Technology / Library | Specific Purpose in Application |
+| :--- | :--- | :--- |
+| **Frontend** | **React.js** | Single Page Application (SPA) architecture, interactive forms, and profile modals. |
+| **Frontend** | **TailwindCSS** | Clean modern look, glassmorphism, responsive navigation, and user dashboards. |
+| **Frontend** | **Lucide Icons** | Contextual icons (Trash, FileText, CheckCircle, Warning, User) for action rows. |
+| **Frontend** | **Recharts** | Interactive pie charts and bar charts displaying anomaly and validation ratios. |
+| **Backend** | **Node.js & Express.js** | Core server host, REST API router, authentication middleware, and business logic. |
+| **Backend** | **Multer** | Handles file uploads, streaming the uploaded CSV files onto the filesystem. |
+| **Backend** | **CSV-Parser** | Fast stream parsing of CSV records into standard JavaScript objects for auditing. |
+| **Database** | **MongoDB & Mongoose** | NoSQL document storage storing structured User, Village, Dataset, and SurveyRecord collections. |
+| **ML Service** | **FastAPI** | High-performance Python microservice exposing prediction and training endpoints. |
+| **ML Service** | **Uvicorn** | Fast ASGI web server hosting the FastAPI endpoints. |
+| **ML Model** | **Scikit-learn (Sklearn)** | Evaluates the datasets using the `IsolationForest` model and feature scalers. |
+| **ML Model** | **Pandas & NumPy** | Handles DataFrame conversions, scaling transformations, and matrix operations. |
+| **ML Serialization** | **Joblib** | Saves and loads model objects (`.joblib`) from disk during training and inference. |
+
+---
+
+## 🔄 End-to-End Process Flow Summary
+
+```
+[Enumerator Login]
+       │
+       ▼
+[Upload Survey CSV] ──► [Node.js Streams CSV] ──► [Evaluate Logical Rules (Rule Risk Score)]
+                               │
+                               ▼ (Batch HTTP POST)
+                        [FastAPI ML Service]
+                               │
+                               ▼
+                        [Column Scaling & Encoding Pipeline]
+                               │
+                               ▼
+                        [Isolation Forest Inference]
+                               │
+                               ▼ (Returns Anomaly Scores & Z-Score Explanations)
+                        [Consolidated Combined Risk Score (70% ML, 30% Rules)]
+                               │
+                               ▼
+                        [Save Records to MongoDB]
+                               │
+            ┌──────────────────┴──────────────────┐
+            ▼                                     ▼
+[Enumerator Workspace Update]            [Admin Reports & Retraining Hub]
+ - View Flagged Reasons                   - Retrain Model on Clean Data
+ - Dynamic CSV Deletions                  - Group & Search Enumerator Uploads
+                                          - Download Location & Agent Audits
+```
+
+1. **Upload & Pre-Validation:** The enumerator uploads a CSV sheet. Node.js processes it, running deterministic check boundaries (e.g. verifying dates and logical integrity) to calculate a **Rule Risk Score**.
+2. **AI Analysis:** The backend transfers the records to the FastAPI service. The service pre-processes the inputs using a pipeline transformation (standardizing numeric attributes and encoding categories) and analyzes them using `IsolationForest` to yield decision scores. Outliers are scrutinized via **Z-Scores** to construct plain-English anomaly reasons.
+3. **Consolidation & Storage:** Node.js calculates a **Combined Risk Score** (70% ML, 30% Rules). Rows with risks $\ge 60$ are marked as **Flagged** with warning/critical statuses, and safe rows are marked **Validated**. All records are saved to MongoDB.
+4. **Actionable Insights:** Enumerators can review flagged reasons on their dashboard or delete erroneous datasets. Admins can group datasets enumerator-wise, extract CSV audit logs for specific villages/enumerators, and initiate model retraining using verified data.
