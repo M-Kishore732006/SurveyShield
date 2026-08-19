@@ -40,6 +40,7 @@ const AdminLayout = () => {
           <SidebarItem to="/admin/flagged" icon={AlertTriangle} label="Flagged Records" active={location.pathname === '/admin/flagged'} />
           <SidebarItem to="/admin/reports" icon={FileBarChart} label="Reports" active={location.pathname === '/admin/reports'} />
           <SidebarItem to="/admin/statistics" icon={TrendingUp} label="Statistics" active={location.pathname === '/admin/statistics'} />
+          <SidebarItem to="/admin/cross-survey" icon={TrendingUp} label="Cross-Survey Intel" active={location.pathname === '/admin/cross-survey'} />
         </div>
 
         <div className="p-4 border-t border-slate-200">

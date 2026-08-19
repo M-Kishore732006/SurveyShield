@@ -8,6 +8,11 @@ const Enumerators = () => {
   const [villages, setVillages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedEnumerator, setSelectedEnumerator] = useState(null);
+  const [enumeratorHistory, setEnumeratorHistory] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -91,6 +96,27 @@ const Enumerators = () => {
     }
   };
 
+  const handleViewEnumerator = async (enumerator) => {
+    setSelectedEnumerator(enumerator);
+    setViewModalOpen(true);
+    setHistoryLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const [res, uploadsRes] = await Promise.all([
+        axios.get(`http://localhost:5000/api/admin/reports/data?filterType=enumerator&filterId=${enumerator._id}`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`http://localhost:5000/api/surveys/uploads?enumeratorId=${enumerator._id}`, { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+      setEnumeratorHistory({
+         summary: res.data.summary,
+         uploads: uploadsRes.data
+      });
+    } catch (err) {
+      console.error('Failed to fetch enumerator history', err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-8">
@@ -148,7 +174,7 @@ const Enumerators = () => {
                       <div className="text-sm text-slate-500">{enumr.email}</div>
                     </td>
                     <td className="px-6 py-4 text-slate-600">{enumr.villageId?.name || 'Unassigned'}</td>
-                    <td className="px-6 py-4 text-slate-600">{enumr.totalRecords}</td>
+                    <td className="px-6 py-4 text-slate-600">{enumr.recordCount || 0}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
                         <div className="w-full bg-slate-200 rounded-full h-2 max-w-[100px]">
@@ -170,7 +196,12 @@ const Enumerators = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 flex space-x-3 items-center">
-                      <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">View</button>
+                      <button 
+                        onClick={() => handleViewEnumerator(enumr)}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        View
+                      </button>
                       <button 
                         onClick={() => handleDelete(enumr._id)}
                         className="text-red-500 hover:text-red-700 transition-colors"
@@ -273,6 +304,114 @@ const Enumerators = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Enumerator History Modal */}
+      {viewModalOpen && selectedEnumerator && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center p-6 border-b border-slate-100">
+              <div>
+                <h2 className="text-xl font-bold text-slate-800">{selectedEnumerator.name}'s Profile</h2>
+                <p className="text-sm text-slate-500">{selectedEnumerator.email}</p>
+              </div>
+              <button onClick={() => setViewModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1">
+              {historyLoading ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : enumeratorHistory ? (
+                <div className="space-y-8">
+                  {/* Metrics Cards */}
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+                      <p className="text-sm text-slate-500 font-medium mb-1">Total Records</p>
+                      <p className="text-2xl font-bold text-slate-900">{enumeratorHistory.summary?.totalRecords || 0}</p>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-4 border border-green-100">
+                      <p className="text-sm text-green-600 font-medium mb-1">Accuracy / Normal</p>
+                      <p className="text-2xl font-bold text-green-700">
+                        {enumeratorHistory.summary?.totalRecords > 0 
+                          ? Math.round((enumeratorHistory.summary.normalCount / enumeratorHistory.summary.totalRecords) * 100) 
+                          : 0}%
+                      </p>
+                    </div>
+                    <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-100">
+                      <p className="text-sm text-yellow-600 font-medium mb-1">Warnings</p>
+                      <p className="text-2xl font-bold text-yellow-700">{enumeratorHistory.summary?.mediumRiskCount || 0}</p>
+                    </div>
+                    <div className="bg-red-50 rounded-lg p-4 border border-red-100">
+                      <p className="text-sm text-red-600 font-medium mb-1">High Risk</p>
+                      <p className="text-2xl font-bold text-red-700">{enumeratorHistory.summary?.highRiskCount || 0}</p>
+                    </div>
+                  </div>
+
+                  {/* History Table */}
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800 mb-4">Dataset Upload History</h3>
+                    <div className="border border-slate-200 rounded-lg overflow-hidden">
+                      <table className="w-full text-left border-collapse">
+                        <thead className="bg-slate-50 border-b border-slate-200">
+                          <tr>
+                            <th className="px-4 py-3 text-sm font-semibold text-slate-700">Date Uploaded</th>
+                            <th className="px-4 py-3 text-sm font-semibold text-slate-700">File Name</th>
+                            <th className="px-4 py-3 text-sm font-semibold text-slate-700">Records</th>
+                            <th className="px-4 py-3 text-sm font-semibold text-slate-700">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {enumeratorHistory.uploads && enumeratorHistory.uploads.length > 0 ? (
+                            enumeratorHistory.uploads.map(upload => (
+                              <tr key={upload._id} className="hover:bg-slate-50">
+                                <td className="px-4 py-3 text-sm text-slate-600">
+                                  {new Date(upload.uploadDate).toLocaleString()}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-slate-600 font-medium">
+                                  {upload.fileName}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-slate-600">
+                                  {upload.numberOfRecords || 0}
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    upload.processingStatus === 'Failed' ? 'bg-red-100 text-red-700' :
+                                    upload.processingStatus === 'Processing' ? 'bg-yellow-100 text-yellow-700' :
+                                    'bg-green-100 text-green-700'
+                                  }`}>
+                                    {upload.processingStatus}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan="4" className="px-4 py-6 text-center text-slate-500">No uploads found.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-slate-500">Failed to load data.</div>
+              )}
+            </div>
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+              <button 
+                onClick={() => setViewModalOpen(false)}
+                className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-medium"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

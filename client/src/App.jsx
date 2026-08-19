@@ -11,6 +11,7 @@ import FlaggedRecords from './pages/admin/FlaggedRecords';
 import Surveys from './pages/admin/Surveys';
 import Reports from './pages/admin/Reports';
 import Statistics from './pages/admin/Statistics';
+import CrossSurvey from './pages/admin/CrossSurvey';
 import EnumeratorDashboard from './pages/enumerator/Dashboard';
 import UploadDetails from './pages/enumerator/UploadDetails';
 import Unauthorized from './pages/Unauthorized';
@@ -40,6 +41,7 @@ function App() {
               <Route path="uploads/:id" element={<UploadDetails />} />
               <Route path="reports" element={<Reports />} />
               <Route path="statistics" element={<Statistics />} />
+              <Route path="cross-survey" element={<CrossSurvey />} />
               {/* Add more admin routes here */}
               <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
             </Route>

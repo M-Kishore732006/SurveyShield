@@ -20,6 +20,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/surveys', require('./routes/surveys'));
 app.use('/api/reports', require('./routes/reports'));
+app.use('/api/cross-survey', require('./routes/crossSurvey'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'SurveyShield API is running' });

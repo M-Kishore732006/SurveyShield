@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { FileText, Eye, User, Calendar, Database, ShieldAlert, AlertTriangle, CheckCircle, Search } from 'lucide-react';
+import { FileText, Eye, User, Calendar, Database, ShieldAlert, AlertTriangle, CheckCircle, Search, Trash2 } from 'lucide-react';
 
 const Surveys = () => {
   const [enumerators, setEnumerators] = useState([]);
@@ -47,6 +47,23 @@ const Surveys = () => {
       console.error('Error fetching datasets:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (datasetId) => {
+    if (!window.confirm("Are you sure you want to delete this dataset? All associated survey records will also be permanently deleted.")) {
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:5000/api/surveys/uploads/${datasetId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setDatasets(prev => prev.filter(d => d._id !== datasetId));
+    } catch (err) {
+      console.error('Error deleting dataset:', err);
+      alert('Failed to delete dataset. ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -179,13 +196,22 @@ const Surveys = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <Link
-                        to={`/admin/uploads/${dataset._id}`}
-                        className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-800 text-sm font-bold"
-                      >
-                        <Eye className="w-4 h-4" />
-                        <span>View Details</span>
-                      </Link>
+                      <div className="flex items-center space-x-3">
+                        <Link
+                          to={`/admin/uploads/${dataset._id}`}
+                          className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-800 text-sm font-bold"
+                        >
+                          <Eye className="w-4 h-4" />
+                          <span>View Details</span>
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(dataset._id)}
+                          className="inline-flex items-center space-x-1 text-red-600 hover:text-red-800 text-sm font-bold ml-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

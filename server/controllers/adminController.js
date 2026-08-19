@@ -102,8 +102,15 @@ exports.createEnumerator = async (req, res) => {
 
 exports.getEnumerators = async (req, res) => {
   try {
-    const enumerators = await User.find({ role: 'enumerator' }).populate('villageId', 'name district');
-    res.json(enumerators);
+    const SurveyRecord = require('../models/SurveyRecord');
+    const enumerators = await User.find({ role: 'enumerator' }).populate('villageId', 'name district').lean();
+    
+    const result = await Promise.all(enumerators.map(async (enumUser) => {
+       const recordCount = await SurveyRecord.countDocuments({ enumerator_id: enumUser._id });
+       return { ...enumUser, recordCount };
+    }));
+    
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -186,14 +193,14 @@ exports.trainMLModel = async (req, res) => {
        const dynamicFields = r.dynamicData || {};
        return {
          ...dynamicFields,
-         age: r.age,
-         income: r.income,
-         hours_worked: r.hours_worked,
-         household_size: r.household_size,
-         gender: r.gender,
-         education: r.education,
-         occupation: r.occupation,
-         employment_status: r.employment_status
+         age: parseFloat(r.age) || 0,
+         income: parseFloat(r.income) || 0,
+         hours_worked: parseFloat(r.hours_worked) || 0,
+         household_size: parseFloat(r.household_size) || 1,
+         gender: r.gender || 'Unknown',
+         education: r.education || 'Unknown',
+         occupation: r.occupation || 'Unknown',
+         employment_status: r.employment_status || 'Unknown'
        };
     });
     

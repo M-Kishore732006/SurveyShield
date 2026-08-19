@@ -110,6 +110,20 @@ def predict_anomalies(request: PredictRequest):
         
     df = pd.DataFrame(request.records)
     
+    # Ensure all required features are present
+    for col in model_manager.metadata['feature_names']:
+        if col not in df.columns:
+            df[col] = None
+            
+    # Cast to correct types to avoid sklearn errors
+    for col in model_manager.metadata.get('categorical_features', []):
+        if col in df.columns:
+            df[col] = df[col].astype(str)
+            
+    for col in model_manager.metadata.get('numeric_features', []):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+    
     preds = model_manager.model.predict(df)
     scores = model_manager.model.decision_function(df)
     
