@@ -11,6 +11,14 @@ const datasetSchema = new mongoose.Schema({
     valid: { type: Number, default: 0 },
     warnings: { type: Number, default: 0 },
     critical: { type: Number, default: 0 }
+  },
+  dataQuality: {
+    totalRecords: { type: Number, default: 0 },
+    validRecords: { type: Number, default: 0 },
+    missingValues: { type: Number, default: 0 },
+    duplicateRecords: { type: Number, default: 0 },
+    invalidValues: { type: Number, default: 0 },
+    dataQualityScore: { type: Number, default: 0 }
   }
 }, { timestamps: true });
 

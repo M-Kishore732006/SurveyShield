@@ -106,8 +106,13 @@ exports.getEnumerators = async (req, res) => {
     const enumerators = await User.find({ role: 'enumerator' }).populate('villageId', 'name district').lean();
     
     const result = await Promise.all(enumerators.map(async (enumUser) => {
-       const recordCount = await SurveyRecord.countDocuments({ enumerator_id: enumUser._id });
-       return { ...enumUser, recordCount };
+       const records = await SurveyRecord.find({ enumerator_id: enumUser._id }, 'combinedRiskScore');
+       const recordCount = records.length;
+       const totalRisk = records.reduce((sum, r) => sum + (r.combinedRiskScore || 0), 0);
+       const averageRiskScore = recordCount > 0 ? Math.round(totalRisk / recordCount) : 0;
+       const reliabilityScore = 100 - averageRiskScore;
+       
+       return { ...enumUser, recordCount, averageRiskScore, reliabilityScore };
     }));
     
     res.json(result);

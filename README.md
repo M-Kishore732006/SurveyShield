@@ -14,10 +14,11 @@ Field surveys are often plagued by:
 * **Manual Auditing Bottlenecks:** Quality assurance teams manually inspecting spreadsheets, which is slow and prone to oversight.
 
 ### 2. The SurveyShield Solution
-SurveyShield automates quality assurance through a **hybrid validation engine**:
-* **Deterministic Checks (Rule-Based):** Immediate checks on logical bounds and data sanity.
-* **Probabilistic Checks (Machine Learning):** Unsupervised outlier detection targeting structural anomalies and fraudulent inputs.
-* **Unified Dashboard:** Dynamic visual metrics, audit logs, role-based workflows, and detailed audit trails.
+SurveyShield automates quality assurance through a **hybrid validation engine** equipped with Multi-Level Anomaly Detection:
+* **Pre-ML Data Quality:** Immediate analysis of missing values, duplicates, and invalid entries to calculate a core Data Quality Score.
+* **Separated Validation:** Distinctly tracks deterministic rule failures (Validation Status: PASS, WARNING, REVIEW_REQUIRED, REJECTED) separately from statistical AI deviations.
+* **Multi-Level Detection:** Analyzes data at the Record Level (individual), Cluster Level (Enumerator/Village biases), and Aggregate Level (Temporal/District trends).
+* **Explainable AI (XAI):** Z-Score based statistical explanations for why an anomaly is flagged, ensuring humans understand the ML decisions.
 
 ---
 
@@ -38,11 +39,10 @@ graph TD
 1. **Upload:** Enumerators upload survey CSV files via their dashboard.
 2. **Preprocessing:** Node.js parses the CSV, validates structure, and maps local villages to the database.
 3. **ML Prediction:** The cleaned dataset is sent as a batch to the FastAPI ML Microservice.
-4. **Weighted Consolidation:** 
-   * **Rule Risk Score** ($30\%$ weight) represents logical violations.
-   * **ML Anomaly Score** ($70\%$ weight) represents statistical variance.
-   * **Combined Risk Score** determines if a record is `Normal`, `Low Risk` (Validated), `Medium Risk` (Flagged / Warning), or `High Risk` (Flagged / Critical).
-5. **Storage & Review:** Stored in MongoDB. Admins review flagged records and can approve, request re-verification, or confirm anomalies.
+4. **Consolidation & Scoring:** 
+   * **Rule Validation Status** is applied for deterministic rule-breaks (PASS, WARNING, REVIEW, REJECTED).
+   * **ML Anomaly Score** (0-100 normalized) determines the **ML Risk** (LOW, MEDIUM, HIGH, CRITICAL).
+5. **Storage & Review:** Stored in MongoDB. Admins review flagged records and examine Cluster-Level anomaly rates per Enumerator/Village.
 
 ---
 
@@ -101,6 +101,11 @@ To make the AI decisions explainable to human reviewers:
 * **Yearly Trends Charts:** Interactive trend visualization of core survey attributes including average monthly income, weekly hours worked, household size, and distribution levels for education and employment over time.
 * **Interactive District Filters:** Dropdown selector allowing users to filter statistics dynamically by specific districts or view consolidated aggregates for the entire state.
 * **Yearly Summary Cards:** Interactive comparison cards displaying summary aggregates per survey year.
+
+### 5. Cross-Survey Consistency Intelligence
+* **Contextual Anomaly Detection:** Analyzes and compares current survey datasets with historical baselines and related surveys to identify systemic deviations and inconsistencies.
+* **Live Aggregation & Analysis:** Dynamic "Run Analysis" controller allowing admins to trigger real-time dataset comparison and inconsistency reporting.
+* **Detailed Inconsistency Tracking:** Explanatory dashboard featuring geographical mapping, deviation metrics, severity flagging (High/Warning), cross-survey scoring, and plain-English explanations for flagged anomalies.
 
 ---
 

@@ -1,0 +1,70 @@
+# SurveyShield: AI-Powered Survey Data Quality Assurance
+
+## 1. Project Overview
+SurveyShield is an enterprise-grade data validation platform designed to detect logical discrepancies, fraud, and statistical outliers in field-collected survey datasets. It bridges the gap between manual data collection and high-integrity reporting by automating quality assurance through a hybrid validation engine featuring multi-level anomaly detection.
+
+## 2. Problem Statement
+Field surveys are often plagued by:
+- Human Errors: Enumerators making typos or inputting out-of-range dates and ages.
+- Logical Inconsistencies: Contradicting answers (e.g., claiming to be unemployed while reporting active working hours).
+- Fabricated Data (Fraud): Data entered artificially that does not follow natural distribution patterns.
+- Manual Auditing Bottlenecks: Quality assurance teams manually inspecting spreadsheets, which is slow, expensive, and prone to oversight.
+
+## 3. Objectives
+- To automate survey data validation using a combination of deterministic rules and probabilistic machine learning models.
+- To detect anomalies at three fundamental levels: Record, Cluster (Enumerator/Village), and Aggregate (State/Temporal).
+- To provide Explainable AI (XAI) insights via statistical deviation tracking to help human reviewers understand *why* records are flagged.
+- To measure Data Quality strictly before AI inference to ensure model integrity.
+
+## 4. Architecture
+SurveyShield uses a distributed microservices architecture:
+- MERN Stack Core: A robust backend handling user authentication, file uploads, role-based workflows, and storing structured survey records in MongoDB.
+- FastAPI Machine Learning Service: A high-performance Python microservice dedicated to data preprocessing, outlier detection, model evaluation, and version control.
+- Frontend Client: A dynamic React single-page application providing specialized dashboards for both enumerators and administrators.
+
+## 5. Workflow
+1. Upload & Data Quality Check: Enumerators upload a CSV sheet. Node.js processes it, immediately calculating a Data Quality Score (validity, missing values, duplicates) before ML processing.
+2. Rule Validation: Deterministic logical bounds calculate a Rule Validation Status (PASS, WARNING, REVIEW_REQUIRED, REJECTED).
+3. ML Anomaly Detection: The FastAPI service analyzes records using the Isolation Forest algorithm, outputting an ML Risk (LOW, MEDIUM, HIGH, CRITICAL) and normalized 0-100 Anomaly Score.
+4. Record-Level Insights: Combined results are stored in MongoDB. Highly unusual records receive statistical XAI explanations based on Z-Scores.
+5. Cluster & Aggregate Analysis: Admins view anomaly rates grouped by Enumerator and Village, alongside district-wide and temporal trends.
+
+## 6. Key Features
+- Multi-Level Anomaly Detection: Identification of outliers at individual (Record), grouped (Cluster), and systemic (Aggregate) levels.
+- Pre-ML Data Quality Summary: Immediate insights into missing and invalid values.
+- Separated Validation Metrics: Distinguishes between deterministic failures (Validation Status) and statistical anomalies (ML Risk).
+- Explainable AI (XAI): Z-Score-based explanations for every flagged anomaly (e.g., "Working hours are 3.2 standard deviations above the historical average").
+- ML Model Evaluation & Versioning: Controlled evaluations using injected anomalies with measured Precision/Recall, alongside strict IF-vX model tracking.
+
+## 7. Technologies Used
+- Frontend: React.js, TailwindCSS, Lucide Icons, Recharts.
+- Backend: Node.js, Express.js, Multer, CSV-Parser.
+- Database: MongoDB & Mongoose.
+- ML Microservice: FastAPI, Uvicorn, Scikit-learn (IsolationForest), Pandas, NumPy, Joblib.
+
+## 8. Implementation Details
+- The Rule-Based engine checks limits (e.g. $0 \le \text{age} \le 120$, $0 \le \text{hours} \le 168$).
+- The ML engine normalizes the raw decision score into a 0-100 risk score and categorizes it logically.
+- Z-Scores ($Z > 2.0$) relative to historical averages are used to translate mathematical variance into plain-English reasons.
+- All flagged instances are tagged with the active Model Version (e.g., IF-v3) for strict governance.
+
+## 9. Major Components
+- Admin Dashboard: Tracks anomalies across Record, Cluster, and Aggregate levels, alongside Data Quality & ML Model Info.
+- Analytics Page: Interactive charts dissecting Enumerator anomaly rates, district deviation, and temporal drift.
+- Enumerator Workspace: Assigned village management, CSV uploads, validation result visualization.
+- Reports Module: Comprehensive CSV/PDF exports merging Data Quality metrics and all three levels of anomaly analytics.
+
+## 10. Benefits
+- Governance: Clear separation between true data failures and statistical unlikeliness prevents mislabeling data as "fraud".
+- Traceability: Model versioning ensures changes in AI performance can be audited against specific datasets.
+- Efficiency: Radically reduces manual QA time while catching complex multidimensional bias that human eyes miss.
+
+## 11. Challenges
+- Ensuring dynamic schema alignment and proper data casting when communicating between Node.js and the Python ML service.
+- Tuning the Isolation Forest model's contamination rate to perfectly balance between catching fraud and minimizing false positives.
+- Generating clean evaluation baselines to properly measure Precision and Recall in unsupervised environments.
+
+## 12. Future Enhancements
+- Continuous Feedback Loop: Supervisors confirming anomalies to automatically tune future Model versions.
+- Extended Algorithm Support: Allowing admins to shift weights dynamically between algorithms (e.g., Isolation Forest vs. Local Outlier Factor).
+- Explainable Outlier Modal: Advanced UI highlighting specific attributes that most heavily influenced the ML decision.

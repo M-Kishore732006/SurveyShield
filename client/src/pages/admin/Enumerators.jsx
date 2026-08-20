@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Plus, Trash2, X } from 'lucide-react';
+import { Search, Plus, Trash2, X, BarChart2 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const Enumerators = () => {
   const [enumerators, setEnumerators] = useState([]);
@@ -12,6 +13,7 @@ const Enumerators = () => {
   const [selectedEnumerator, setSelectedEnumerator] = useState(null);
   const [enumeratorHistory, setEnumeratorHistory] = useState(null);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [isChartModalOpen, setIsChartModalOpen] = useState(false);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -124,13 +126,22 @@ const Enumerators = () => {
           <h1 className="text-2xl font-bold text-slate-900">Enumerators</h1>
           <p className="text-slate-500 mt-1">Manage survey enumerators</p>
         </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Add Enumerator</span>
-        </button>
+        <div className="flex space-x-3">
+          <button 
+            onClick={() => setIsChartModalOpen(true)}
+            className="flex items-center space-x-2 bg-indigo-50 text-indigo-600 border border-indigo-200 px-4 py-2 rounded-lg hover:bg-indigo-100 transition-colors font-medium"
+          >
+            <BarChart2 className="w-5 h-5" />
+            <span>Risk Score Overview</span>
+          </button>
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Add Enumerator</span>
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
@@ -411,6 +422,32 @@ const Enumerators = () => {
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Risk Score Overview Chart Modal */}
+      {isChartModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center p-6 border-b border-slate-100">
+              <h2 className="text-xl font-bold text-slate-800">Enumerator Anomaly Risk Overview</h2>
+              <button onClick={() => setIsChartModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-8 h-[400px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={enumerators.map(e => ({ name: e.name, Score: e.averageRiskScore || 0 }))} margin={{ top: 20, right: 30, left: 20, bottom: 40 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0"/>
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748B', fontSize: 12}} interval={0} angle={-25} textAnchor="end" />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748B'}} domain={[0, 100]} />
+                  <Tooltip cursor={{fill: '#F1F5F9'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                  <Bar dataKey="Score" name="Anomaly Risk Scores" fill="#4F46E5" radius={[8, 8, 0, 0]} maxBarSize={60} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
