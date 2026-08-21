@@ -1,6 +1,4 @@
-Below is a natural, professional README you can use directly for your **SurveyShield GitHub repository**. It avoids excessive marketing language, emojis, icons, and overly polished AI-style wording.
 
-````markdown
 # SurveyShield
 
 SurveyShield is a survey data validation and quality assurance platform developed to identify errors, inconsistencies, and unusual patterns in field-collected survey datasets.
